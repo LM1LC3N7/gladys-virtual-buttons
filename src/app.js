@@ -6,18 +6,22 @@
 //
 // Rules held here:
 // - every change of the list or of a state goes through one queue (`run`),
-//   so two actions never interleave;
+//   which only holds memory and /data work: never a request to Gladys;
+// - publications to Gladys go through their own chain, in order; Discovery
+//   through another one, the list taken when it is sent (last one wins);
+// - an "on" or a press is refused when it is applied more than 3.5 s after
+//   it was received (Gladys has shown a failure by then): nothing sent; an
+//   "off" is always applied;
 // - a switch state (and the end of a timed switch) is saved in /data before
-//   the command is acknowledged; the ack never waits for the publication to
-//   Gladys;
-// - a timed switch is never lost: its own timer, plus a sweep every 30 s that
-//   turns off every switch whose end has passed (after a restart too); the
-//   return to off is never refused by a budget;
-// - states published within a budget below the 300/min of the host API; a
-//   state Gladys did not take is sent again by the sweep (never a push "1",
-//   which would start a scene late);
-// - a button pressed more than 20 times in a minute (a scene that triggers
-//   itself) is refused until the minute has passed.
+//   the command is acknowledged; the ack of a switch never waits for the
+//   publication; a press waits (bounded) to tell "taken" from "not sent";
+// - a value Gladys already holds is never published again (a reconnection or
+//   a restart never starts a scene); an "off" of a switch already off is
+//   acknowledged without publishing (no "= Off" scene loop);
+// - a timed switch is never lost: its own timer (which ends it even if the
+//   wall clock went back), plus a sweep every 30 s (wall clock forward, after
+//   a restart); the return to off is never refused;
+// - 20 presses or "on" a minute per button, 240 states a minute in all.
 // -----------------------------------------------------------------------------
 
 import { createLogger } from '@gladysassistant/integration-sdk';
@@ -85,12 +89,16 @@ export class ButtonsApp {
     gladys,
     store = new FileStore(),
     now = Date.now,
+    mono,
     timers = defaultTimers,
     logger,
   } = {}) {
     this.gladys = gladys;
     this.store = store;
     this.now = now;
+    // The deadlines of the commands run on a monotonic clock (the injected
+    // clock in the tests).
+    this.mono = mono ?? (now === Date.now ? () => performance.now() : now);
     this.timers = timers;
     this.log = logger ?? createLogger({ name: 'virtual-buttons' });
     /** id -> button, in creation order. */
@@ -98,16 +106,29 @@ export class ButtonsApp {
     this.removed = [];
     this.loading = null;
     this.queue = Promise.resolve();
-    this.budget = new Window(LIMITS.statesPerMinute, TIMINGS.window, now);
-    /** id -> Window of the commands of one button. */
+    this.publishing = Promise.resolve();
+    this.discovering = Promise.resolve();
+    this.budget = new Window(LIMITS.statesPerMinute, TIMINGS.window, this.mono);
+    /** id -> Window of the presses and "on" of one button. */
     this.presses = new Map();
+    /** id -> Window of the "off" of one button (never refused, only not republished). */
+    this.offs = new Map();
     /** id -> timer: a push going back to 0, a timed switch going back to off. */
     this.pulseTimers = new Map();
     this.endTimers = new Map();
+    /** Timed switches whose own timer ran out (due whatever the wall clock says). */
+    this.ended = new Set();
     /** Buttons whose current state Gladys has not taken yet. */
     this.unpublished = new Set();
+    /** id -> the last state Gladys took from this process. */
+    this.sent = new Map();
+    /** id -> number of publications of this button in flight. */
+    this.inflight = new Map();
     /** The list could not be saved: saved again by the sweep. */
     this.dirty = false;
+    /** The last "Change a button": a second identical one for another button must be confirmed. */
+    this.lastEdit = null;
+    this.pendingEdit = null;
     this.sweepTimer = null;
     this.stopped = false;
   }
@@ -134,19 +155,23 @@ export class ButtonsApp {
     }, TIMINGS.sweep);
     this.sweepTimer?.unref?.();
     // A timed switch whose end passed while the container was stopped goes
-    // back to off now, before anything else.
+    // back to off now, before anything else (published when connected).
     await this.expireDue();
   }
 
-  /** Every (re)connection to Gladys: recover, then Discovery, status and states again. */
+  /**
+   * Every (re)connection to Gladys: recover, then Discovery and status again,
+   * and only the states Gladys does not hold already.
+   */
   async connected() {
     await this.init();
     await this.run(() => this.recover());
     await this.publishDiscovery();
     await this.reportStatus();
-    // Gladys may have lost what it had: every state of a created button again.
     for (const button of this.buttons.values()) {
-      this.unpublished.add(button.id);
+      if (this.differsFromGladys(button)) {
+        this.unpublished.add(button.id);
+      }
     }
     await this.flushStates();
   }
@@ -165,7 +190,7 @@ export class ButtonsApp {
     await this.store.flush();
   }
 
-  /** One change at a time. */
+  /** One change at a time (memory and /data only). */
   run(task) {
     const result = this.queue.then(task);
     this.queue = result.catch(() => {});
@@ -177,8 +202,13 @@ export class ButtonsApp {
   }
 
   async save() {
+    const corrupted = this.store.corrupted;
     await this.store.save(this.snapshot());
     this.dirty = false;
+    if (corrupted && !this.store.corrupted) {
+      // The "unreadable list" status is lifted by the first good save.
+      this.reportStatus().catch(() => {});
+    }
   }
 
   /**
@@ -187,7 +217,7 @@ export class ButtonsApp {
    */
   async recover() {
     let changed = false;
-    for (const device of Array.isArray(this.gladys.devices) ? this.gladys.devices : []) {
+    for (const device of this.createdDevices()) {
       const id = idOfDevice(this.gladys, device?.external_id);
       if (!id || this.buttons.has(id) || this.removed.includes(id)) {
         continue;
@@ -212,9 +242,13 @@ export class ButtonsApp {
 
   // --- Gladys side -------------------------------------------------------------------
 
+  createdDevices() {
+    return Array.isArray(this.gladys.devices) ? this.gladys.devices : [];
+  }
+
   createdIds() {
     const ids = new Set();
-    for (const device of Array.isArray(this.gladys.devices) ? this.gladys.devices : []) {
+    for (const device of this.createdDevices()) {
       const id = idOfDevice(this.gladys, device?.external_id);
       if (id) {
         ids.add(id);
@@ -223,19 +257,53 @@ export class ButtonsApp {
     return ids;
   }
 
-  async publishDiscovery() {
-    const devices = [...this.buttons.values()].map((b) => deviceOf(this.gladys, b));
-    try {
-      await this.gladys.publishDiscoveredDevices(devices);
-    } catch (err) {
-      this.log.warn(`Discovery not published: ${err.message}`);
+  /** The value Gladys holds for a button (null when unknown). */
+  lastValue(button) {
+    const feature = featureOf(this.gladys, button);
+    for (const device of this.createdDevices()) {
+      for (const f of Array.isArray(device?.features) ? device.features : []) {
+        if (f?.external_id === feature) {
+          return typeof f.last_value === 'number' ? f.last_value : null;
+        }
+      }
     }
+    return null;
+  }
+
+  /** Whether Gladys may not hold the state of the button. */
+  differsFromGladys(button) {
+    // What Gladys took from this process is newer than the list read at the
+    // connection; otherwise the value read from Gladys; unknown: publish.
+    if (this.sent.has(button.id)) {
+      return this.sent.get(button.id) !== button.state;
+    }
+    const held = this.lastValue(button);
+    return held === null || held !== button.state;
+  }
+
+  /** Discovery, one publication at a time, with the list of the moment it is sent. */
+  publishDiscovery() {
+    const run = this.discovering.then(async () => {
+      const devices = [...this.buttons.values()].map((b) => deviceOf(this.gladys, b));
+      try {
+        await this.gladys.publishDiscoveredDevices(devices);
+      } catch (err) {
+        this.log.warn(`Discovery not published: ${err.message}`);
+      }
+    });
+    this.discovering = run;
+    return run;
   }
 
   async reportStatus() {
     const created = this.createdIds();
     const count = [...this.buttons.keys()].filter((id) => created.has(id)).length;
-    const message = this.store.corrupted ? T.statusCorrupted : T.status(this.buttons.size, count);
+    let message = T.status(this.buttons.size, count);
+    if (this.store.unreadable) {
+      message = T.statusUnreadable;
+    } else if (this.store.corrupted) {
+      message = T.statusCorrupted;
+    }
     try {
       await this.gladys.setConnectionStatus(true, message);
     } catch (err) {
@@ -251,72 +319,101 @@ export class ButtonsApp {
     }
   }
 
-  /**
-   * Sends the current state of the buttons Gladys has not taken yet (created
-   * devices only: Gladys drops the states of a feature that does not exist),
-   * within the budget. A push button is sent as 0, never as a late 1.
-   */
-  async flushStates({ force = false } = {}) {
-    const created = this.createdIds();
-    const states = [];
-    for (const id of this.unpublished) {
-      const button = this.buttons.get(id);
-      if (!button || !created.has(id)) {
-        this.unpublished.delete(id);
-        continue;
-      }
-      states.push({
-        id,
-        device_feature_external_id: featureOf(this.gladys, button),
-        state: button.state,
-      });
-    }
-    if (states.length === 0) {
-      return;
-    }
-    const batch = force ? states : states.slice(0, this.budget.free());
-    if (batch.length === 0 || !this.budget.take(batch.length, { force })) {
-      return;
-    }
-    for (let i = 0; i < batch.length; i += 100) {
-      const part = batch.slice(i, i + 100);
-      try {
-        await this.gladys.publishStates(
-          part.map(({ device_feature_external_id, state }) => ({
-            device_feature_external_id,
-            state,
-          })),
-        );
-        for (const { id, state } of part) {
-          // Taken, unless the state changed meanwhile.
-          if (this.buttons.get(id)?.state === state) {
-            this.unpublished.delete(id);
-          }
-        }
-      } catch (err) {
-        this.log.warn(`States not published, sent again later: ${err.message}`);
-      }
+  /** Publications, one after the other, in the order asked. */
+  chain(task) {
+    const run = this.publishing.then(task);
+    this.publishing = run.catch(() => {});
+    return run;
+  }
+
+  track(id, delta) {
+    const n = (this.inflight.get(id) ?? 0) + delta;
+    if (n > 0) {
+      this.inflight.set(id, n);
+    } else {
+      this.inflight.delete(id);
     }
   }
 
-  /** One state, now, without delaying the ack; a failure is sent again by the sweep. */
-  publishLater(button, state, { retry = true } = {}) {
-    const feature = featureOf(this.gladys, button);
-    Promise.resolve()
-      .then(() => this.gladys.publishState(feature, state))
-      .then(
-        () => {
-          if (this.buttons.get(button.id)?.state === state) {
-            this.unpublished.delete(button.id);
+  /**
+   * One state of one button. Resolves 'ok', 'failed' or 'late' (not sent:
+   * its deadline passed while waiting its turn). A failure is sent again by
+   * the sweep when `retry`; a push "1" never is.
+   */
+  publish(button, state, { retry = true, deadline = null, attempt = {} } = {}) {
+    this.track(button.id, 1);
+    return this.chain(async () => {
+      try {
+        if (attempt.cancelled || (deadline !== null && this.mono() > deadline)) {
+          return 'late';
+        }
+        attempt.started = true;
+        await this.gladys.publishState(featureOf(this.gladys, button), state);
+        this.sent.set(button.id, state);
+        if (this.buttons.get(button.id)?.state === state) {
+          this.unpublished.delete(button.id);
+        }
+        return 'ok';
+      } catch (err) {
+        this.log.warn(`State not published: ${err.message}`);
+        if (retry && this.buttons.get(button.id)?.state === state) {
+          this.unpublished.add(button.id);
+        }
+        return 'failed';
+      } finally {
+        this.track(button.id, -1);
+      }
+    });
+  }
+
+  /**
+   * Sends the current state of the buttons Gladys has not taken yet (created
+   * devices only: Gladys drops the states of a feature that does not exist),
+   * within the budget, never one already in flight. A push is sent as 0.
+   */
+  flushStates({ force = false } = {}) {
+    return this.chain(async () => {
+      const created = this.createdIds();
+      const states = [];
+      for (const id of this.unpublished) {
+        const button = this.buttons.get(id);
+        if (!button || !created.has(id)) {
+          this.unpublished.delete(id);
+          continue;
+        }
+        if (this.inflight.has(id)) {
+          continue;
+        }
+        states.push({
+          id,
+          device_feature_external_id: featureOf(this.gladys, button),
+          state: button.state,
+        });
+      }
+      const batch = force ? states : states.slice(0, this.budget.free());
+      if (batch.length === 0 || !this.budget.take(batch.length, { force })) {
+        return;
+      }
+      for (let i = 0; i < batch.length; i += 100) {
+        const part = batch.slice(i, i + 100);
+        try {
+          await this.gladys.publishStates(
+            part.map(({ device_feature_external_id, state }) => ({
+              device_feature_external_id,
+              state,
+            })),
+          );
+          for (const { id, state } of part) {
+            this.sent.set(id, state);
+            if (this.buttons.get(id)?.state === state) {
+              this.unpublished.delete(id);
+            }
           }
-        },
-        (err) => {
-          this.log.warn(`State not published: ${err.message}`);
-          if (retry) {
-            this.unpublished.add(button.id);
-          }
-        },
-      );
+        } catch (err) {
+          this.log.warn(`States not published, sent again later: ${err.message}`);
+        }
+      }
+    });
   }
 
   // --- Timers ------------------------------------------------------------------------
@@ -337,7 +434,13 @@ export class ButtonsApp {
     }
     const delay = Math.min(MAX_DELAY, Math.max(0, button.until - this.now()));
     const timer = this.timers.setTimeout(() => {
+      if (this.endTimers.get(button.id) !== timer) {
+        return;
+      }
       this.endTimers.delete(button.id);
+      // The timer measured the real duration: due even if the wall clock
+      // went back meanwhile.
+      this.ended.add(button.id);
       this.expireDue().catch((err) => this.log.warn(`Timer failed: ${err.message}`));
     }, delay);
     timer?.unref?.();
@@ -345,32 +448,38 @@ export class ButtonsApp {
   }
 
   /** Every timed switch whose end has passed goes back to off (never refused). */
-  expireDue() {
-    return this.run(async () => {
+  async expireDue() {
+    const count = await this.run(async () => {
       const now = this.now();
       const due = [...this.buttons.values()].filter(
         (b) =>
-          b.kind === KINDS.TIMED && b.state === 1 && (!Number.isFinite(b.until) || b.until <= now),
+          b.kind === KINDS.TIMED &&
+          b.state === 1 &&
+          (this.ended.has(b.id) || !Number.isFinite(b.until) || b.until <= now),
       );
-      if (due.length === 0) {
-        return;
-      }
       for (const button of due) {
         button.state = 0;
         button.until = null;
+        this.ended.delete(button.id);
         this.armEnd(button);
         this.unpublished.add(button.id);
       }
-      try {
-        await this.save();
-      } catch (err) {
-        // Off in memory anyway (the protective side); saved again by the sweep.
-        this.dirty = true;
-        this.log.warn(`Save failed: ${err.message}`);
+      if (due.length > 0) {
+        try {
+          await this.save();
+        } catch (err) {
+          // Off in memory anyway (the protective side); saved again by the sweep.
+          this.dirty = true;
+          this.log.warn(`Save failed: ${err.message}`);
+        }
       }
-      await this.flushStates({ force: true });
-      this.refreshWidget();
+      return due.length;
     });
+    if (count > 0) {
+      // Outside the queue, never awaited by a command.
+      this.flushStates({ force: true }).catch(() => {});
+      this.refreshWidget();
+    }
   }
 
   async sweep() {
@@ -388,13 +497,18 @@ export class ButtonsApp {
 
   // --- Commands ----------------------------------------------------------------------
 
-  /** Loop and flood guard for one command of one button. */
-  admit(button, states) {
-    let window = this.presses.get(button.id);
+  windowOf(map, id) {
+    let window = map.get(id);
     if (!window) {
-      window = new Window(LIMITS.pressesPerButton, TIMINGS.window, this.now);
-      this.presses.set(button.id, window);
+      window = new Window(LIMITS.pressesPerButton, TIMINGS.window, this.mono);
+      map.set(id, window);
     }
+    return window;
+  }
+
+  /** Loop and flood guard for a press or an "on". */
+  admit(button, states) {
+    const window = this.windowOf(this.presses, button.id);
     if (window.free() < 1) {
       throw new ButtonError('tooFast');
     }
@@ -404,64 +518,128 @@ export class ButtonsApp {
     window.take(1);
   }
 
-  /** A push: 1 now, 0 after the pulse (a new press restarts the pulse). */
-  press(button) {
+  /**
+   * A push: 1 now, 0 after the pulse. Waits (bounded) for Gladys to take the
+   * 1: resolves 'ok' or 'unconfirmed', throws when it was not sent.
+   */
+  async press(button, received) {
+    if (this.mono() - received > TIMINGS.late) {
+      throw new ButtonError('late');
+    }
     this.admit(button, 2);
     const previous = this.pulseTimers.get(button.id);
     if (previous) {
       this.timers.clearTimeout(previous);
-    }
-    // The 1 is never sent again later: a late 1 would start a scene late.
-    this.publishLater(button, 1, { retry: false });
-    const timer = this.timers.setTimeout(() => {
       this.pulseTimers.delete(button.id);
-      if (this.buttons.get(button.id) === button) {
-        this.publishLater(button, 0);
+    }
+    // The 1 is never sent again later, nor after its deadline: a late 1
+    // would start a scene late.
+    const attempt = { started: false, cancelled: false };
+    const sent = this.publish(button, 1, {
+      retry: false,
+      deadline: received + TIMINGS.late,
+      attempt,
+    });
+    sent.then((outcome) => {
+      if (outcome !== 'ok' || this.buttons.get(button.id) !== button) {
+        return;
       }
-    }, TIMINGS.pulse);
-    timer?.unref?.();
-    this.pulseTimers.set(button.id, timer);
+      const timer = this.timers.setTimeout(() => {
+        this.pulseTimers.delete(button.id);
+        if (this.buttons.get(button.id) === button) {
+          this.publish(button, 0);
+        }
+      }, TIMINGS.pulse);
+      timer?.unref?.();
+      this.pulseTimers.set(button.id, timer);
+    });
+    const wait = Math.max(0, received + TIMINGS.pressAnswer - this.mono());
+    let timer;
+    const outcome = await Promise.race([
+      sent,
+      new Promise((resolve) => {
+        timer = this.timers.setTimeout(() => resolve('unconfirmed'), wait);
+        timer?.unref?.();
+      }),
+    ]);
+    this.timers.clearTimeout(timer);
+    if (outcome === 'unconfirmed' && !attempt.started) {
+      // Still waiting its turn: it will never leave (no late 1).
+      attempt.cancelled = true;
+      throw new ButtonError('late');
+    }
+    if (outcome === 'late') {
+      throw new ButtonError('late');
+    }
+    if (outcome === 'failed') {
+      throw new ButtonError('notSent');
+    }
+    return outcome;
   }
 
   /**
-   * A switch on (1) or off (0), or 'toggle' (decided in the queue, on the
-   * current state); a timed switch turned on (again) restarts its delay.
-   * Resolves the value applied.
+   * A switch on (1) or off (0). Resolves { before, value, sent } where `sent`
+   * is the publication (a promise, or null when nothing had to be sent),
+   * never awaited here.
    */
-  setSwitch(button, wanted) {
-    return this.run(async () => {
+  async setSwitch(button, value, received) {
+    const result = await this.run(async () => {
       if (this.buttons.get(button.id) !== button) {
         throw new ButtonError('unknownButton');
       }
-      const value = wanted === 'toggle' ? (button.state === 1 ? 0 : 1) : wanted;
-      // Off is protective: never refused by the guards.
+      const before = button.state;
+      // Gladys already holds this very value: nothing to publish (a scene
+      // "Off -> turn it off" or "On -> turn it on" does not loop).
+      const held =
+        before === value &&
+        !this.unpublished.has(button.id) &&
+        !this.inflight.has(button.id) &&
+        (this.sent.get(button.id) === value || this.lastValue(button) === value);
       if (value === 1) {
-        this.admit(button, 1);
+        // Checked just before applying: an "on" Gladys gave up on is refused.
+        if (this.mono() - received > TIMINGS.late) {
+          throw new ButtonError('late');
+        }
+        if (held && button.kind === KINDS.SWITCH) {
+          return { before, value, publish: false };
+        }
+        this.admit(button, held ? 0 : 1);
       } else {
+        const offs = this.windowOf(this.offs, button.id);
+        const flood = offs.free() < 1;
+        offs.take(1, { force: true });
+        if (held || (before === 0 && flood)) {
+          return { before, value, publish: false };
+        }
         this.budget.take(1, { force: true });
       }
-      const before = { state: button.state, until: button.until };
+      const previous = { state: button.state, until: button.until };
       button.state = value;
       button.until =
         value === 1 && button.kind === KINDS.TIMED ? this.now() + button.minutes * 60 * 1000 : null;
+      this.ended.delete(button.id);
       try {
         await this.save();
       } catch (err) {
         this.log.warn(`Save failed: ${err.message}`);
         if (value === 1) {
           // An "on" that a restart would not find is refused.
-          button.state = before.state;
-          button.until = before.until;
+          button.state = previous.state;
+          button.until = previous.until;
           throw new ButtonError('saveFailed');
         }
         this.dirty = true;
       }
       this.armEnd(button);
-      this.unpublished.add(button.id);
-      this.publishLater(button, value);
-      this.refreshWidget();
-      return value;
+      // A timed switch on again restarts its duration, without a new "1".
+      return { before, value, publish: !held };
     });
+    let sent = null;
+    if (result.publish) {
+      sent = this.publish(button, value);
+    }
+    this.refreshWidget();
+    return { before: result.before, value, sent };
   }
 
   async ready() {
@@ -470,6 +648,7 @@ export class ButtonsApp {
 
   /** onSetValue: a command from Gladys (device box, scene, voice, MCP…). */
   async setValue(device, feature, value) {
+    const received = this.mono();
     await this.ready();
     const id = idOfDevice(this.gladys, device?.external_id);
     const button = id ? this.buttons.get(id) : null;
@@ -485,11 +664,11 @@ export class ButtonsApp {
     }
     if (button.kind === KINDS.PUSH) {
       if (value === 1) {
-        this.press(button);
+        await this.press(button, received);
       }
       return;
     }
-    await this.setSwitch(button, value);
+    await this.setSwitch(button, value, received);
   }
 
   // --- Manifest actions --------------------------------------------------------------
@@ -523,9 +702,11 @@ export class ButtonsApp {
     throw new ButtonError('targetMissing');
   }
 
-  async afterChange() {
-    await this.publishDiscovery();
-    await this.reportStatus();
+  /** Discovery and status after a change: never awaited by the action (a slow host never holds it). */
+  afterChange() {
+    this.publishDiscovery()
+      .then(() => this.reportStatus())
+      .catch((err) => this.log.warn(`After change: ${err.message}`));
     this.refreshWidget();
   }
 
@@ -557,13 +738,13 @@ export class ButtonsApp {
       }
       return created;
     });
-    await this.afterChange();
+    this.afterChange();
     return T.added(button.name);
   }
 
   async edit(fields) {
     await this.ready();
-    const name = await this.run(async () => {
+    const done = await this.run(async () => {
       const button = this.target(fields);
       const { values, error } = readFields(
         { ...fields, button: undefined, current_name: undefined },
@@ -578,6 +759,25 @@ export class ButtonsApp {
       if (values.name && this.nameTaken(values.name, button.id)) {
         throw new ButtonError('nameTaken');
       }
+      // The form keeps its values after a run: the same changes for another
+      // button right after are applied only when asked twice.
+      const signature = JSON.stringify(values);
+      const now = this.mono();
+      const recent = (entry) => entry && now - entry.at <= TIMINGS.editConfirm;
+      if (
+        recent(this.lastEdit) &&
+        this.lastEdit.signature === signature &&
+        this.lastEdit.id !== button.id
+      ) {
+        const confirmed =
+          recent(this.pendingEdit) &&
+          this.pendingEdit.id === button.id &&
+          this.pendingEdit.signature === signature;
+        if (!confirmed) {
+          this.pendingEdit = { id: button.id, signature, at: now };
+          throw new ButtonError('sameAsPrevious');
+        }
+      }
       const before = { ...button };
       // The kind never changes (the feature of a created device is fixed); a
       // new duration applies at the next "on".
@@ -589,16 +789,50 @@ export class ButtonsApp {
         this.log.warn(`Save failed: ${err.message}`);
         throw new ButtonError('saveFailed');
       }
-      return button.name;
+      this.lastEdit = { id: button.id, signature, at: now };
+      this.pendingEdit = null;
+      return { name: button.name, values };
     });
-    await this.afterChange();
-    return T.edited(name);
+    this.afterChange();
+    return T.edited(done.name, done.values);
   }
 
   async remove(fields) {
     await this.ready();
+    const input = fields && typeof fields === 'object' ? fields : {};
+    const typed = Object.hasOwn(input, 'current_name') ? input.current_name : undefined;
+    // The typed name is the confirmation: a removal is final.
+    if (typeof typed !== 'string' || nameKey(typed) === '') {
+      throw new ButtonError('removeNameMissing');
+    }
+    const button = this.target(input);
+    if (nameKey(typed) !== nameKey(button.name)) {
+      throw new ButtonError('removeNameMismatch');
+    }
+    // A switch that is on is turned off first, and Gladys must take the 0:
+    // its "Off" scenes run, and Gladys never keeps "on" forever.
+    const wasOn = isSwitchKind(button.kind) && button.state === 1;
+    if (wasOn) {
+      const { sent } = await this.setSwitch(button, 0, this.mono());
+      let timer;
+      const outcome = sent
+        ? await Promise.race([
+            sent,
+            new Promise((resolve) => {
+              timer = this.timers.setTimeout(() => resolve('timeout'), TIMINGS.removeAnswer);
+              timer?.unref?.();
+            }),
+          ])
+        : 'ok';
+      this.timers.clearTimeout(timer);
+      if (outcome !== 'ok') {
+        throw new ButtonError('offNotConfirmed');
+      }
+    }
     const name = await this.run(async () => {
-      const button = this.target(fields);
+      if (this.buttons.get(button.id) !== button) {
+        throw new ButtonError('unknownButton');
+      }
       const removedBefore = this.removed;
       this.buttons.delete(button.id);
       this.removed = [...this.removed.filter((id) => id !== button.id), button.id].slice(
@@ -620,11 +854,13 @@ export class ButtonsApp {
         }
       }
       this.presses.delete(button.id);
+      this.offs.delete(button.id);
       this.unpublished.delete(button.id);
+      this.ended.delete(button.id);
       return button.name;
     });
-    await this.afterChange();
-    return T.removed(name);
+    this.afterChange();
+    return T.removed(name, wasOn);
   }
 
   // --- Device events -----------------------------------------------------------------
@@ -638,7 +874,9 @@ export class ButtonsApp {
     if (!this.buttons.has(id)) {
       await this.run(() => this.recover());
     }
-    if (this.buttons.has(id)) {
+    const button = this.buttons.get(id);
+    if (button && this.differsFromGladys(button)) {
+      // Its first state.
       this.unpublished.add(id);
       await this.flushStates();
     }
@@ -677,23 +915,37 @@ export class ButtonsApp {
   }
 
   async widgetAction(actionKey, params) {
+    const received = this.mono();
     await this.ready();
     if (typeof actionKey !== 'string' || !WIDGET_ACTION_KEY.test(actionKey)) {
       throw new ButtonError('unknownButton');
     }
-    const id =
-      params && typeof params === 'object' && Object.hasOwn(params, 'id') ? params.id : null;
+    const has = (key) => params && typeof params === 'object' && Object.hasOwn(params, key);
+    const id = has('id') ? params.id : null;
     const button = isId(id) ? this.buttons.get(id) : null;
     if (!button) {
       throw new ButtonError('unknownButton');
     }
-    if (!isSwitchKind(button.kind)) {
-      this.press(button);
-      return T.pressed(button.name);
+    // The value the card asked for (decided on the state it showed), never a toggle.
+    const value = has('value') ? params.value : null;
+    if (value !== 0 && value !== 1) {
+      throw new ButtonError('badValue');
     }
-    const value = await this.setSwitch(button, 'toggle');
+    if (!isSwitchKind(button.kind)) {
+      if (value !== 1) {
+        throw new ButtonError('badValue');
+      }
+      const outcome = await this.press(button, received);
+      return outcome === 'ok' ? T.pressed(button.name) : T.pressedUnconfirmed(button.name);
+    }
+    const { before } = await this.setSwitch(button, value, received);
     if (value === 0) {
-      return T.switchedOff(button.name);
+      return before === 0 ? T.alreadyOff(button.name) : T.switchedOff(button.name);
+    }
+    if (before === 1) {
+      return button.kind === KINDS.TIMED
+        ? T.alreadyOnRestarted(button.name, button.minutes)
+        : T.alreadyOn(button.name);
     }
     return button.kind === KINDS.TIMED
       ? T.switchedOnFor(button.name, button.minutes)

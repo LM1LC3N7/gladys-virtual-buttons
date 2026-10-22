@@ -8,11 +8,11 @@ start a scene when you press them. No need to fake an MQTT device.
 
 ## The three types of button
 
-| Type             | What it does                                                                                                                | Example                 |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| **Push button**  | One press = one pulse: it goes to 1, then back to 0 by itself one second later.                                             | "Start the movie scene" |
-| **Switch**       | On / off, remembered (even after a restart).                                                                                | "Night mode"            |
-| **Timed switch** | On, then back to off by itself after the chosen duration (1 to 1440 minutes). Pressing "on" again starts the duration over. | "Heating 30 min"        |
+| Type             | What it does                                                                                                                | Example          |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| **Push button**  | One press = one pulse: it goes to 1, then back to 0 by itself one second later.                                             | "Start movie"    |
+| **Switch**       | On / off, remembered (even after a restart).                                                                                | "Night mode"     |
+| **Timed switch** | On, then back to off by itself after the chosen duration (1 to 1440 minutes). Pressing "on" again starts the duration over. | "Heating 30 min" |
 
 A button **controls nothing by itself**: a scene acts when it changes. The
 button is the remote, the scene does the work.
@@ -30,72 +30,111 @@ button is the remote, the scene does the work.
    - **Icon**: flame / heating, light bulb, shutter, plug, fan, music, movie,
      door, house, moon, sun, alarm, star…;
    - **Colour in the widget**: main (blue), secondary (grey) or danger (red);
-   - **Ask for confirmation before pressing**: yes or no.
-3. Confirm. The message under the button says `Button "Heating" added`.
+   - **Ask for confirmation before pressing (widget)**: yes or no.
+3. Confirm. Under the button, the message says: `Button "Heating" added. Now
+open the Discovery tab…`.
 
-## Step 2: add it in Gladys (Discovery tab)
+## Step 2: add it to Gladys (Discovery tab)
 
 Gladys does not let an integration create a device on its own: you approve it.
 
-1. Open the **Discovery** tab of the integration. Your button is listed, with
-   its name.
-2. Click **Create** next to it. You may choose its room.
-3. It now appears in the **Devices** tab. A push button is a "button" device, a
-   switch a "switch" device.
+1. Open the **Discovery** tab of the integration.
+   What you see: one line per button, with its name, and on the right a blue
+   **"Add to Gladys"** button.
+2. Click **"Add to Gladys"**. The line then shows the badge "Already added".
+3. The button appears in the **Devices** tab. Gladys shows the category of its
+   feature:
+   - "Button" for a push button;
+   - "Switch" for a switch or a timed switch.
 
 ## Step 3: the scene that acts
 
-Example: "when I press Heating, turn on the plug of the heater".
+Open **Scenes**, click **New scene**, give it a name and an icon (the flame,
+for example), then add a **"Device state change"** trigger and pick your
+button in the device list. What comes next depends on the type.
 
-1. Open **Scenes**, click **New scene**, give it a name and an icon (the
-   flame, for example).
-2. **Trigger**: choose **Device state change**. In the device list, pick your
-   button ("Heating"). Set the condition to **equal to** and the value to
-   **1**. Leave "Only when crossing the threshold" unticked: the scene then
-   starts at every press.
-3. **Action**: for example **Control a device**, choose the plug of the heater
+### For a push button
+
+What you see under the chosen device: a list of button events.
+
+1. Choose **"Simple click"**. There is no value to type and no box to tick:
+   the scene starts at every press.
+2. **Action**: for example **Control a device**, choose the plug of the heater
    and "Turn on".
-4. For a switch, make a second scene "when Heating changes to **0**" that
-   turns the plug off. For a timed switch, this "changes to 0" scene also
-   starts when the duration ends.
-5. Save and enable the scene.
+3. Save and enable the scene.
 
-Never make a scene that sends a value **back to the button that started it**:
-it would start again and again. The integration refuses a button used more
-than 20 times in a minute, but better not to try.
+### For a switch or a timed switch
+
+What you see under the chosen device: two buttons **"On"** and **"Off"**, and
+a box to tick.
+
+1. Click **"On"**.
+2. **Tick** the box:
+   **"Execute only when threshold is passed (and not at every value sent by the device)"**.
+   The scene then starts only when the switch goes from off to on, never twice
+   in a row (nor at a restart).
+3. **Action**: for example turn on the plug of the heater.
+4. Make a second, identical scene with **"Off"** (box ticked too) that turns
+   the plug off. For a timed switch, this "Off" scene also starts when the
+   duration ends.
+
+### Loops
+
+Do not make a scene that sends a command **back to the button that started
+it**. The integration protects itself:
+
+- a press or an "on" repeated more than **20 times in a minute** on the same
+  button is refused for the rest of the minute;
+- an "off" is **never** refused; an "off" of a switch already off (and an "on"
+  of a switch already on) is accepted without sending anything to Gladys, so
+  without starting a scene again.
 
 ## Step 4: the "Buttons" widget on the dashboard
 
 1. Open your **dashboard**, switch to edit mode, add a box and choose the
    **Buttons** widget (of the Virtual buttons integration).
 2. In its settings, choose **1 to 4 buttons** (Button 1 to Button 4). Only the
-   buttons created at step 2 are listed.
+   buttons added to Gladys at step 2 are listed.
 3. The widget shows one pill per button, with the chosen icon, name and
    colour:
-   - pressing a **push button** sends a pulse;
-   - pressing a **switch** toggles it. On, it shows its colour (blue if you
-     chose grey); off, it is grey;
+   - pressing a **push button** sends a pulse; the message says "pressed", or
+     the error if Gladys did not take it;
+   - a **switch** that is on shows its colour (blue if you chose grey); off,
+     it is grey. A press does what the pill shows: turn off a pill that is on,
+     turn on a pill that is off (if the state changed meanwhile, the message
+     says "already off" or "already on");
    - for a **timed switch** that is on, a line shows the time left
      ("Heating: 25 min left");
    - if you asked for a **confirmation**, Gladys asks you to confirm before
      sending.
-4. For more than 4 buttons, add several widgets.
+4. For more than 4 buttons, add several widgets. Gladys accepts at most 30
+   presses a minute on the widgets of the integration, all widgets together.
 
-The buttons also work in the usual Gladys boxes: the "Devices" box of a room,
-and for the switches the "Quick actions" box. There, the icon is the Gladys one
-(a circle for a button, a toggle for a switch): the icon you chose only shows in
-the "Buttons" widget.
+The buttons also work in the usual Gladys boxes: the "Devices" box of a room
+(a **"Push"** button for a push button, a toggle for the others), and for the
+switches the **"Quick actions"** box. There, the icon is the Gladys one: the
+icon you chose only shows in the "Buttons" widget. **The confirmation only
+exists in the widget**: the "Devices" box, a scene, the voice or an assistant
+press without asking.
 
 ## Change or remove a button
 
 - **Change a button**: pick the button in the list (or type its name if it is
-  not created yet), then fill in only what changes: new name in the widget,
-  icon, colour, confirmation, duration. The type does not change. A new
+  not added to Gladys yet). The other fields say "Unchanged" (duration: 0);
+  change only what you want. The result message lists what changed ("icon:
+  Flame / heating; colour: unchanged…"). The type does not change. A new
   duration applies at the next "on". A new name does not rename the Gladys
   device: rename it in the Devices tab too if you wish.
-- **Remove a button**: pick it the same way. Then delete its device in the
-  **Devices** tab if you had created it. If you only delete the device in
-  Gladys, the button stays listed in Discovery.
+  The form keeps its values after a run: **reload the page** before changing
+  another button. If you apply exactly the same changes to another button
+  right after, the integration asks you to run the action again to confirm.
+- **Remove a button**: it is **final** (the scenes that used it will not find
+  it again). Type its name to confirm (and pick it in the list if you wish). A
+  switch that is on is turned off first: its "Off" scenes run. Then delete its
+  device in the **Devices** tab if you had added it to Gladys, and **edit the
+  dashboard cards** that showed it (Gladys shows a settings error there
+  otherwise). If you only delete the device in Gladys, the button stays listed
+  in Discovery.
 
 ## Safety: read this before controlling anything important
 
@@ -103,8 +142,10 @@ the "Buttons" widget.
   everything off" command, the voice or the chat ("turn off Heating"), a
   connected assistant, any scene, any dashboard (even a wall screen). For a
   **sensitive command** (gate, alarm, boiler, garage door), **never use a
-  switch**: use a **push button with confirmation**, and put the conditions in
-  the scene (someone at home, time of day, alarm state…).
+  switch**: use a **push button with confirmation** in the widget, put the
+  conditions in the scene (someone at home, time of day, alarm state…), and do
+  not show this button in the "Devices" box of a public dashboard (it presses
+  without confirmation).
 - **The state of the button is not the real state of the device it controls.**
   "Heating: on" means you pressed, not that the boiler is heating. If the scene
   fails or the device does not answer, the button does not know. To see the
@@ -112,9 +153,12 @@ the "Buttons" widget.
   your dashboard.
 - The buttons are **never** declared as lights, so a "turn off the lights" never
   reaches them.
+- An "on" or a press that arrives too late (Gladys has already shown a failure,
+  after 5 seconds) is refused: nothing is sent. An "off" is always applied.
 - If the container of the integration is stopped, a press fails (Gladys shows
   it). A timed switch whose duration ended while it was stopped goes back to
-  off as soon as it starts again.
+  off as soon as it starts again. A restart or a reconnection never sends
+  Gladys a value it already holds: your scenes do not start again.
 
 ## The alternative without this integration: a scene in "Quick actions"
 
@@ -123,8 +167,8 @@ without this integration and without a container:
 
 1. Create the scene (for example "Heating 30 min") and pick its icon in the
    icon picker of the scene (the flame, for example).
-2. On the dashboard, add the **Quick actions** box (or the **Scene** box), then
-   add the scene with the label you like.
+2. On the dashboard, add the **"Quick actions"** box (or the **Scene** box),
+   then add the scene with the label you like.
 3. A press starts the scene, with its icon.
 
 This integration is mostly useful when you need a **state**: an on/off switch
@@ -139,6 +183,9 @@ duration.
 - The integration does not start scenes itself: the state change of the button
   starts them (step 3).
 - The widget updates at every press, and otherwise every 15 to 30 seconds.
+- If the saved list is lost (a new volume), the buttons are rebuilt from the
+  Gladys devices: a switch takes back the value Gladys holds, a timed switch
+  comes back off (its "Off" scene runs).
 - Tested with a fake Gladys only: please report what does not work on the
   GitHub repository.
 
@@ -146,4 +193,5 @@ duration.
 
 The list of the buttons, their state and the end of a timed switch are kept in
 `/data/virtual-buttons.json`, the volume of the integration. Nothing leaves your
-Gladys.
+Gladys. If this file cannot be read, the integration never overwrites it and
+says so in its status.

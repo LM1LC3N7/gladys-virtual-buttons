@@ -46,6 +46,19 @@ test('an unreadable file is set aside and reported', async (t) => {
   assert.deepEqual(await store.load(NOW), { buttons: [], removed: [] });
   assert.equal(store.corrupted, true);
   assert.equal(await readFile(`${store.path}.bad`, 'utf8'), '{ not json');
+  // M9: a good save lifts it.
+  await store.save({ buttons: [], removed: [] });
+  assert.equal(store.corrupted, false);
+});
+
+test('M5: a file present but unreadable is never overwritten', async (t) => {
+  const store = new FileStore({ dir: await tempDir(t) });
+  // A directory in place of the file: readFile fails with EISDIR, not ENOENT.
+  await mkdir(store.path);
+  assert.deepEqual(await store.load(NOW), { buttons: [], removed: [] });
+  assert.equal(store.unreadable, true);
+  await assert.rejects(store.save({ buttons: [], removed: [] }), /not overwritten/);
+  assert.ok((await stat(store.path)).isDirectory());
 });
 
 test('hostile content: bounded, checked, no prototype pollution', () => {

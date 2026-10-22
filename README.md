@@ -34,17 +34,31 @@ Gladys ⇄ SDK ⇄ src/handlers.js ⇄ src/app.js (ButtonsApp)
   the button travels in the device params (`VB_*`), so a lost `/data` is
   rebuilt from the devices Gladys kept (never a removed one).
 - **Commands** (`onSetValue`, the widget): a push publishes 1, then 0 one
-  second later; a switch saves its state in `/data` before the ack; a timed
-  switch saves its end too. The ack never waits for the publication.
-- **Timed switches**: a timer per switch plus a sweep every 30 s; an end that
-  passed while the container was stopped turns the switch off at the start;
+  second later, and waits (4 s at most from its reception) to tell "taken"
+  from "not sent"; a switch saves its state in `/data` before the ack, a timed
+  switch its end too, and the switch ack never waits for the publication. An
+  "on" or a press applied more than 3.5 s after its reception is refused,
+  nothing sent; an "off" is always applied. The command queue only holds
+  memory and `/data` work; publications and Discovery have their own chains.
+- **Never a value Gladys holds**: at each connection only the states that
+  differ from what Gladys holds (`last_value`, or what it took from this
+  process) are published; an "off" of a switch already off, an "on" of a
+  switch already on, publish nothing. No scene starts again on a restart.
+- **Timed switches**: a timer per switch (which ends it even when the wall
+  clock went back) plus a sweep every 30 s (wall clock forward, restart); an
+  end that passed while the container was stopped turns it off at the start;
   the return to off is never refused.
-- **Guards**: 20 commands a minute per button (a scene that triggers itself),
-  240 states a minute in all, states Gladys refused sent again by the sweep
-  (never a late push "1").
+- **Guards**: 20 presses or "on" a minute per button (a scene that triggers
+  itself), "off" never refused; 240 states a minute in all; states Gladys
+  refused sent again by the sweep (never a late push "1").
+- **Actions**: "Change a button" starts on "keep" (duration 0) and lists what
+  changed; the same changes for another button right after must be asked
+  twice. "Remove a button" needs the name typed, turns a switch that is on off
+  first and waits for Gladys to take the 0.
 - **Widget** "Buttons" (Gladys 5.1.0+): four settings `button_1` …
-  `button_4`, one pill each (widget action `press_<n>`, so a confirmation can
-  be asked and a switch toggled); a switch that is on shows its colour.
+  `button_4`, one pill each (widget action `press_<n>`, params
+  `{ id, value }`: the value the card showed, never a toggle; a confirmation
+  can be asked); a switch that is on shows its colour.
 - No scene trigger nor scene action: the state change of the device already
   starts the scenes; a dedicated trigger would be redundant and loop-prone.
 

@@ -102,7 +102,21 @@ export const TIMINGS = Object.freeze({
   window: 60 * 1000,
   /** Widget content cache. */
   widgetTtl: 30,
+  /**
+   * An "on" or a press older than this (since it was received) is refused,
+   * nothing sent: Gladys shows a failure after 5 s.
+   */
+  late: 3500,
+  /** How long a press waits for Gladys to take its "1", from its reception. */
+  pressAnswer: 4000,
+  /** How long "Remove a button" waits for the "off" of a switch that was on. */
+  removeAnswer: 5000,
+  /** A second identical "Change a button" for another button confirms it. */
+  editConfirm: 2 * 60 * 1000,
 });
+
+/** The "Change a button" value meaning "leave as it is". */
+export const KEEP = 'keep';
 
 export const DEFAULTS = Object.freeze({
   kind: KINDS.PUSH,

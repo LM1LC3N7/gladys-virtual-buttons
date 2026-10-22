@@ -11,12 +11,14 @@ import {
   ACTIONS,
   DEFAULTS,
   ICONS,
+  KEEP,
   KIND_LIST,
   LIMITS,
   STYLES,
   WIDGET_SLOTS,
   WIDGETS,
 } from '../src/constants.js';
+import { ICON_LABELS, STYLE_LABELS } from '../src/i18n.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const manifest = JSON.parse(read('gladys-assistant-integration.json'));
@@ -130,21 +132,37 @@ test('the actions are the ones the code handles, with the code lists', () => {
   assert.equal(add.minutes.max, LIMITS.minutesMax);
   assert.equal(add.minutes.default, DEFAULTS.minutes);
 
-  // "Change": nothing has a default (an empty field means "unchanged"), no type.
+  // "Change": no type; every static select starts on "keep" and the duration
+  // on 0, so the untouched form means "unchanged" and is accepted by the core.
   const edit = fieldsOf(ACTIONS.EDIT);
   assert.equal(edit.kind, undefined);
   for (const field of Object.values(edit)) {
-    assert.equal(field.default, undefined, field.key);
     assert.equal(field.required, false, field.key);
   }
-  assert.deepEqual(values(edit.icon), [...ICONS]);
-  assert.deepEqual(values(edit.style), [...STYLES]);
+  assert.deepEqual(values(edit.icon), [KEEP, ...ICONS]);
+  assert.deepEqual(values(edit.style), [KEEP, ...STYLES]);
+  assert.deepEqual(values(edit.confirm), [KEEP, 'no', 'yes']);
+  for (const key of ['icon', 'style', 'confirm']) {
+    assert.equal(edit[key].default, KEEP, key);
+  }
+  assert.equal(edit.minutes.default, 0);
+  assert.equal(edit.minutes.min, 0);
   assert.equal(edit.minutes.max, LIMITS.minutesMax);
   for (const key of [ACTIONS.EDIT, ACTIONS.REMOVE]) {
     const fields = fieldsOf(key);
     assert.equal(fields.button.source, 'devices');
     assert.equal(fields.button.options, undefined);
+    assert.equal(fields.button.default, undefined);
     assert.equal(fields.current_name.type, 'string');
+  }
+  // "Remove": the name typed is the confirmation.
+  assert.equal(fieldsOf(ACTIONS.REMOVE).current_name.required, true);
+  // Icon and colour labels shown in the result of "Change" are the form's.
+  for (const option of add.icon.options) {
+    assert.deepEqual(ICON_LABELS[option.value], option.label, option.value);
+  }
+  for (const option of add.style.options) {
+    assert.deepEqual(STYLE_LABELS[option.value], option.label, option.value);
   }
   // No scene trigger nor scene action in v1 (redundant, loop risk).
   assert.equal(manifest.scene_triggers, undefined);
@@ -167,6 +185,70 @@ test('the widget: key, slots, handler', () => {
     assert.ok(widget.description[lang].length <= 100);
   }
   assert.match(widget.icon, /^[a-z0-9-]{1,40}$/);
+});
+
+// The checks of the core (externalIntegration.validateConfigValue.js, Gladys
+// master 536406f) for the types used here: every key the form sends is
+// validated, an empty select is refused.
+function coreValidate(field, value) {
+  switch (field.type) {
+    case 'string':
+      return typeof value === 'string';
+    case 'number':
+      return (
+        typeof value === 'number' &&
+        Number.isFinite(value) &&
+        (field.min === undefined || value >= field.min) &&
+        (field.max === undefined || value <= field.max)
+      );
+    case 'select':
+      return field.source !== undefined || field.options.some((o) => o.value === value);
+    default:
+      return false;
+  }
+}
+
+test('S10: the untouched "Change a button" form is valid for the core and changes nothing', () => {
+  for (const key of [ACTIONS.ADD, ACTIONS.EDIT]) {
+    for (const field of action(key).fields) {
+      if (field.default !== undefined) {
+        assert.ok(coreValidate(field, field.default), `${key}.${field.key}`);
+      } else if (field.type === 'select' && field.source === undefined) {
+        assert.fail(`${key}.${field.key}: a select without default sends '' (refused)`);
+      }
+    }
+  }
+  assert.equal(coreValidate({ type: 'select', options: [{ value: 'a' }] }, ''), false);
+});
+
+test('I1: the guides use the exact words of the Gladys screens', () => {
+  const fr = read('docs/fr.md');
+  const en = read('docs/en.md');
+  for (const words of [
+    '« Ajouter à Gladys »',
+    "« Changement d'état de l'appareil »",
+    '« Clic simple »',
+    '« Exécuter seulement lorsque le seuil est passé ( et non pas à chaque valeur envoyée ) »',
+    '« Prise »',
+    '« Actions rapides »',
+    '« Appuyer »',
+  ]) {
+    assert.ok(fr.includes(words), `fr: ${words}`);
+  }
+  for (const words of [
+    '"Add to Gladys"',
+    '"Device state change"',
+    '"Simple click"',
+    '"Execute only when threshold is passed (and not at every value sent by the device)"',
+    '"Switch"',
+    '"Quick actions"',
+    '"Push"',
+  ]) {
+    assert.ok(en.includes(words), `en: ${words}`);
+  }
+  for (const text of [fr, en, JSON.stringify(manifest)]) {
+    assert.doesNotMatch(text, /« Créer »|"Create"/);
+  }
 });
 
 test('the image ships the licence', () => {

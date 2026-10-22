@@ -15,19 +15,31 @@ the notes of the version's GitHub Release.
 - Virtual buttons created from the Configuration screen ("Add a button"): a
   name, a type (push button, switch, timed switch of 1 to 1440 minutes), an
   icon from a short list, a colour and a confirmation before pressing. Up to
-  100 buttons. "Change a button" and "Remove a button" too.
-- The buttons are proposed in the Discovery tab: a push button is a
-  `button`/`push` device (1 then 0 one second later), a switch or a timed
-  switch a `switch`/`binary` device. Never a light. Their look travels in the
-  device params, so a lost `/data` is rebuilt from the devices Gladys kept.
-- A timed switch goes back to off by itself; its end is kept in `/data`, and
-  an end passed while the container was stopped turns it off at the start.
+  100 buttons. "Change a button" (fields on "Unchanged", the result lists what
+  changed) and "Remove a button" (name typed to confirm, a switch that is on
+  turned off first) too.
+- The buttons are proposed in the Discovery tab ("Add to Gladys"): a push
+  button is a `button`/`push` device (1 then 0 one second later), a switch or
+  a timed switch a `switch`/`binary` device. Never a light. Their look travels
+  in the device params, so a lost `/data` is rebuilt from the devices Gladys
+  kept.
+- A timed switch goes back to off by itself after its real duration, even if
+  the clock is changed; its end is kept in `/data`, and an end passed while
+  the container was stopped turns it off at the start.
+- A restart or a reconnection never sends Gladys a value it already holds,
+  so no scene starts again; an "off" of a switch already off sends nothing.
+- An "on" or a press that arrives after Gladys gave up (3.5 s) is refused,
+  nothing sent; an "off" is always applied. A press says whether Gladys took
+  it.
 - The "Buttons" dashboard widget (Gladys 5.1.0 or later): up to 4 buttons per
   card, with their icon, name, colour and confirmation; a switch that is on is
-  shown in its colour, off in grey; the time left of a timed switch.
-- Guards: a button pressed more than 20 times in a minute (a scene that
-  triggers itself) is refused for the rest of the minute; at most 240 states
-  a minute in all; names cleaned and bounded.
-- Step-by-step guides in English and French.
+  shown in its colour, off in grey; a tap does what the card shows (never a
+  toggle); the time left of a timed switch.
+- Guards: more than 20 presses or "on" in a minute on a button (a scene that
+  triggers itself) are refused for the rest of the minute, "off" never; at
+  most 240 states a minute in all; names cleaned and bounded; a `/data` file
+  that cannot be read is never overwritten.
+- Step-by-step guides in English and French, with the exact words of the
+  Gladys screens.
 
 [Unreleased]: https://github.com/LM1LC3N7/gladys-virtual-buttons/commits/main

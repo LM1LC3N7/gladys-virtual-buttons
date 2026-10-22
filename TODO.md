@@ -26,10 +26,11 @@ up to date at the end of every milestone.
     `server/config/icons.json` of Gladys 5.2: `flame`, `blinds`, `door-open`,
     `lightbulb`, `fan`, `timer` are not in the original Feather set; an
     unknown name shows no icon but breaks nothing);
-  - the radio display and the default values of the "Add a button" form, and
-    that "Change a button" really leaves empty fields empty (no default);
-  - that a scene "device state = 1" without threshold starts at every press
-    of a push button (1 then 0);
+  - the radio display and the default values of the "Add a button" and
+    "Change a button" forms ("Unchanged", duration 0);
+  - that a scene "Simple click" starts at every press of a push button (1
+    then 0), and a switch scene "On" with the threshold box ticked only on a
+    change;
   - the `source: "devices"` lists of the actions and widget settings (the
     created buttons only);
   - that republishing a created device updates its params without the
@@ -70,22 +71,59 @@ up to date at the end of every milestone.
 - "Edit"/"Remove" name the button by a `source: "devices"` select (created
   buttons) or by its current name (not created yet; case and accents ignored,
   names are unique on the same key).
-- Confirmation is a select yes/no, not a boolean: an empty field of "Change a
-  button" then means "unchanged".
+- Confirmation is a select yes/no, not a boolean. "Change a button" (review
+  1, I7): the core validates every key the real form sends and refuses an
+  empty select, and the form keeps its values after a run; so icon, colour
+  and confirmation start on `keep` ("Unchanged"), the duration on 0 (= keep),
+  the result lists what changed, and the very same changes for another button
+  within 2 minutes are refused once (run again to apply them). The `button`
+  list (source devices) cannot have a default: reload the page to empty it.
+- "Remove a button" (review 1, I5 and M8): the name must be typed (the
+  confirmation); a switch that is on is turned off first and Gladys must take
+  the 0 within 5 s, otherwise nothing is removed (the 0 is sent again by the
+  sweep).
 - Timed switch: "on" again restarts the duration; a new duration applies at
   the next "on"; the end is saved before the ack (an "on" that cannot be
   saved is refused), bounded to 24 h when read back; a timer per switch plus
   a sweep every 30 s (clock jumps, lost timers); an end passed while stopped
   turns it off at the start. The return to off is never refused, even when
   `/data` cannot be written (saved again by the sweep).
-- Guards: 20 commands a minute per button (loop of a scene on its own
+- Never a value Gladys holds (review 1, B1): the core runs the triggers on
+  every state it saves, even an equal one. At each `connected` only the
+  buttons whose state differs from what Gladys took from this process, or
+  from the `last_value` of the created device (when this process sent
+  nothing), are published; an "off" of a switch already off and an "on" of a
+  plain switch already on (Gladys holding it) publish nothing (no "Off ->
+  off" loop, I3); a timed switch "on" again restarts its duration without a
+  new 1. The guides say to tick "Execute only when threshold is passed" for
+  switches.
+- Deadlines (review 1, I2): the command queue holds only memory and `/data`
+  work, never a request to Gladys; publications go through their own ordered
+  chain, Discovery through another (list taken when sent, M1); the actions
+  never wait for Discovery. An "on" or a press applied more than 3.5 s after
+  its reception (monotonic clock) is refused, nothing sent; a press whose 1
+  is still waiting its turn when 4 s have passed is cancelled; an "off" is
+  always applied. A press waits for Gladys to take its 1 (M2): "pressed",
+  "sent, without confirmation" (request out, no answer yet) or refused.
+- Guards: 20 presses or "on" a minute per button (loop of a scene on its own
   button), refused with a message; 240 states a minute in all (host API: 300);
-  "off" is never refused by them. A state Gladys refused is sent again by the
-  sweep, except a push "1" (it would start a scene late: only the 0 is sent
-  again).
+  "off" is never refused (beyond 20 a minute, an "off" of a switch already off
+  is acknowledged without publishing). A state Gladys refused is sent again by
+  the sweep, except a push "1" (it would start a scene late); a state in
+  flight is never sent twice (M3).
+- Timed switch and the wall clock (review 1, I4): the timer of the switch
+  measures the real duration; when it fires the switch is due even if the
+  wall clock went back. The sweep (wall clock) still catches a clock moved
+  forward and the ends passed while stopped.
+- Recovery from the params (M6): a plain switch takes back the `last_value`
+  of Gladys (nothing published); a timed switch always comes back off.
+- `/data` (M5, M9): a file present but unreadable (not ENOENT) is never
+  overwritten (every save refused until a restart, said in the status); the
+  "unreadable list" status is lifted by the first good save.
 - Widget: every pill carries a widget action (`press_1` … `press_4`, keys
   unique within a content), never `device_feature` + `value`: only an action
-  can ask for a confirmation, and a fixed value cannot toggle a switch. The
+  can ask for a confirmation. The params carry `{ id, value }`, the value
+  decided on the state the card showed (I6), never a toggle. The
   core tints only `device_feature` pills, so a switch shows its state by its
   style: its colour when on (primary when "secondary" was chosen), secondary
   when off. Four `select` settings instead of one `multi_select` (the order is
@@ -97,5 +135,10 @@ up to date at the end of every milestone.
   button).
 - Icons: 20 names from the Gladys icon set (`server/config/icons.json`),
   labelled in English and French; default `power`.
-- Status: "N buttons, M created in Gladys", republished with Discovery and
-  every state at each `connected`.
+- Status: "N buttons, M added to Gladys", republished with Discovery at each
+  `connected`.
+- Words of the Gladys screens quoted exactly in the guides and messages
+  (review 1, I1): « Ajouter à Gladys », « Changement d'état de l'appareil »,
+  « Clic simple » for a push button, « On » / « Off » and the threshold box
+  for a switch, the switch category shown « Prise » (en "Switch"); tested in
+  `test/manifest.test.js`.

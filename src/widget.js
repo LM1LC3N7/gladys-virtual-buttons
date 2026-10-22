@@ -3,8 +3,8 @@
 // label and style of its button.
 //
 // Every pill carries a widget action (never device_feature + value): only an
-// action can ask a confirmation, and a switch needs a toggle, which a fixed
-// value cannot do. The core tints a pill only for device_feature + value, so
+// action can ask a confirmation. The core tints a pill only for
+// device_feature + value, so
 // a switch shows its state through its style instead: the chosen style when
 // on (primary when "secondary" was chosen), secondary when off.
 // -----------------------------------------------------------------------------
@@ -56,7 +56,14 @@ export function buttonsWidget(buttons, now) {
   }
   for (const [index, button] of buttons.slice(0, 4).entries()) {
     // Action keys are unique within a content: press_1 … press_4.
-    const action = { key: `${WIDGET_ACTION}_${index + 1}`, params: { id: button.id } };
+    // The value wanted travels in the params, decided on the state this card
+    // shows (the core relays the params of the content it displays): a tap on
+    // an "on" pill always means "off", even if the timer ended meanwhile.
+    const value = button.kind === KINDS.PUSH || button.state !== 1 ? 1 : 0;
+    const action = {
+      key: `${WIDGET_ACTION}_${index + 1}`,
+      params: { id: button.id, value },
+    };
     if (button.confirm) {
       action.confirm = true;
     }

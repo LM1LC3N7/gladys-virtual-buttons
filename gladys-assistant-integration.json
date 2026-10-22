@@ -21,8 +21,8 @@
         "fr": "Créez vos propres boutons"
       },
       "description": {
-        "en": "1. Click \"Add a button\" below: a name, a type, an icon. 2. Open the Discovery tab and click \"Create\" next to the button. 3. Create a scene \"when the button changes to 1\" that does what you want. 4. Add the \"Buttons\" widget on your dashboard. The button does nothing by itself: the scene acts. Never use a switch for a sensitive command (gate, alarm, boiler): a \"turn everything off\", the voice or a scene can reach it; use a push button with confirmation. Tested with a fake Gladys only.",
-        "fr": "1. Cliquez sur « Ajouter un bouton » ci-dessous : un nom, un type, une icône. 2. Ouvrez l'onglet Découverte et cliquez sur « Créer » à côté du bouton. 3. Créez une scène « quand le bouton passe à 1 » qui fait ce que vous voulez. 4. Ajoutez le widget « Boutons » sur votre tableau de bord. Le bouton ne fait rien tout seul : c'est la scène qui agit. N'utilisez jamais un interrupteur pour une commande sensible (portail, alarme, chaudière) : un « tout éteindre », la voix ou une scène peut l'atteindre ; prenez un bouton poussoir avec confirmation. Testé seulement avec un faux Gladys."
+        "en": "1. Click \"Add a button\" below: a name, a type, an icon. 2. Open the Discovery tab and click \"Add to Gladys\" next to the button. 3. Create a scene with the trigger \"Device state change\": for a push button choose \"Simple click\"; for a switch choose \"On\" and tick \"Execute only when threshold is passed\". 4. Add the \"Buttons\" widget on your dashboard. The button does nothing by itself: the scene acts. Never use a switch for a sensitive command (gate, alarm, boiler): a \"turn everything off\", the voice or a scene can reach it; use a push button with confirmation. Tested with a fake Gladys only.",
+        "fr": "1. Cliquez sur « Ajouter un bouton » ci-dessous : un nom, un type, une icône. 2. Ouvrez l'onglet Découverte et cliquez sur « Ajouter à Gladys » à côté du bouton. 3. Créez une scène avec le déclencheur « Changement d'état de l'appareil » : pour un poussoir, choisissez « Clic simple » ; pour un interrupteur, choisissez « On » et cochez « Exécuter seulement lorsque le seuil est passé ». 4. Ajoutez le widget « Boutons » sur votre tableau de bord. Le bouton ne fait rien tout seul : c'est la scène qui agit. N'utilisez jamais un interrupteur pour une commande sensible (portail, alarme, chaudière) : un « tout éteindre », la voix ou une scène peut l'atteindre ; prenez un poussoir avec confirmation. Testé seulement avec un faux Gladys."
       },
       "links": [
         {
@@ -50,8 +50,8 @@
         "fr": "Ajouter un bouton"
       },
       "description": {
-        "en": "Up to 100 buttons. Then create it in the Discovery tab.",
-        "fr": "100 boutons au plus. Créez-le ensuite dans l'onglet Découverte."
+        "en": "Up to 100 buttons. Then click \"Add to Gladys\" next to it in the Discovery tab.",
+        "fr": "100 boutons au plus. Cliquez ensuite sur « Ajouter à Gladys » à côté de lui dans l'onglet Découverte."
       },
       "timeout_seconds": 15,
       "fields": [
@@ -136,26 +136,146 @@
           "required": false,
           "default": "power",
           "options": [
-            { "value": "power", "label": { "en": "On / off", "fr": "Marche / arrêt" } },
-            { "value": "flame", "label": { "en": "Flame / heating", "fr": "Flamme / chauffage" } },
-            { "value": "thermometer", "label": { "en": "Thermometer", "fr": "Thermomètre" } },
-            { "value": "lightbulb", "label": { "en": "Light bulb", "fr": "Ampoule" } },
-            { "value": "blinds", "label": { "en": "Shutter", "fr": "Volet" } },
-            { "value": "plug", "label": { "en": "Plug", "fr": "Prise" } },
-            { "value": "fan", "label": { "en": "Fan", "fr": "Ventilateur" } },
-            { "value": "music", "label": { "en": "Music", "fr": "Musique" } },
-            { "value": "film", "label": { "en": "Movie", "fr": "Film" } },
-            { "value": "tv", "label": { "en": "Television", "fr": "Télévision" } },
-            { "value": "door-open", "label": { "en": "Door", "fr": "Porte" } },
-            { "value": "home", "label": { "en": "House", "fr": "Maison" } },
-            { "value": "moon", "label": { "en": "Moon / night", "fr": "Lune / nuit" } },
-            { "value": "sun", "label": { "en": "Sun / day", "fr": "Soleil / jour" } },
-            { "value": "bell", "label": { "en": "Alarm / bell", "fr": "Alarme / sonnette" } },
-            { "value": "star", "label": { "en": "Star", "fr": "Étoile" } },
-            { "value": "droplet", "label": { "en": "Water", "fr": "Eau" } },
-            { "value": "coffee", "label": { "en": "Coffee", "fr": "Café" } },
-            { "value": "zap", "label": { "en": "Lightning", "fr": "Éclair" } },
-            { "value": "timer", "label": { "en": "Timer", "fr": "Minuteur" } }
+            {
+              "value": "power",
+              "label": {
+                "en": "On / off",
+                "fr": "Marche / arrêt"
+              }
+            },
+            {
+              "value": "flame",
+              "label": {
+                "en": "Flame / heating",
+                "fr": "Flamme / chauffage"
+              }
+            },
+            {
+              "value": "thermometer",
+              "label": {
+                "en": "Thermometer",
+                "fr": "Thermomètre"
+              }
+            },
+            {
+              "value": "lightbulb",
+              "label": {
+                "en": "Light bulb",
+                "fr": "Ampoule"
+              }
+            },
+            {
+              "value": "blinds",
+              "label": {
+                "en": "Shutter",
+                "fr": "Volet"
+              }
+            },
+            {
+              "value": "plug",
+              "label": {
+                "en": "Plug",
+                "fr": "Prise"
+              }
+            },
+            {
+              "value": "fan",
+              "label": {
+                "en": "Fan",
+                "fr": "Ventilateur"
+              }
+            },
+            {
+              "value": "music",
+              "label": {
+                "en": "Music",
+                "fr": "Musique"
+              }
+            },
+            {
+              "value": "film",
+              "label": {
+                "en": "Movie",
+                "fr": "Film"
+              }
+            },
+            {
+              "value": "tv",
+              "label": {
+                "en": "Television",
+                "fr": "Télévision"
+              }
+            },
+            {
+              "value": "door-open",
+              "label": {
+                "en": "Door",
+                "fr": "Porte"
+              }
+            },
+            {
+              "value": "home",
+              "label": {
+                "en": "House",
+                "fr": "Maison"
+              }
+            },
+            {
+              "value": "moon",
+              "label": {
+                "en": "Moon / night",
+                "fr": "Lune / nuit"
+              }
+            },
+            {
+              "value": "sun",
+              "label": {
+                "en": "Sun / day",
+                "fr": "Soleil / jour"
+              }
+            },
+            {
+              "value": "bell",
+              "label": {
+                "en": "Alarm / bell",
+                "fr": "Alarme / sonnette"
+              }
+            },
+            {
+              "value": "star",
+              "label": {
+                "en": "Star",
+                "fr": "Étoile"
+              }
+            },
+            {
+              "value": "droplet",
+              "label": {
+                "en": "Water",
+                "fr": "Eau"
+              }
+            },
+            {
+              "value": "coffee",
+              "label": {
+                "en": "Coffee",
+                "fr": "Café"
+              }
+            },
+            {
+              "value": "zap",
+              "label": {
+                "en": "Lightning",
+                "fr": "Éclair"
+              }
+            },
+            {
+              "value": "timer",
+              "label": {
+                "en": "Timer",
+                "fr": "Minuteur"
+              }
+            }
           ]
         },
         {
@@ -168,12 +288,27 @@
           "required": false,
           "default": "primary",
           "options": [
-            { "value": "primary", "label": { "en": "Main (blue)", "fr": "Principal (bleu)" } },
+            {
+              "value": "primary",
+              "label": {
+                "en": "Main (blue)",
+                "fr": "Principal (bleu)"
+              }
+            },
             {
               "value": "secondary",
-              "label": { "en": "Secondary (grey)", "fr": "Secondaire (gris)" }
+              "label": {
+                "en": "Secondary (grey)",
+                "fr": "Secondaire (gris)"
+              }
             },
-            { "value": "danger", "label": { "en": "Danger (red)", "fr": "Danger (rouge)" } }
+            {
+              "value": "danger",
+              "label": {
+                "en": "Danger (red)",
+                "fr": "Danger (rouge)"
+              }
+            }
           ]
         },
         {
@@ -186,8 +321,20 @@
           "required": false,
           "default": "no",
           "options": [
-            { "value": "no", "label": { "en": "No", "fr": "Non" } },
-            { "value": "yes", "label": { "en": "Yes", "fr": "Oui" } }
+            {
+              "value": "no",
+              "label": {
+                "en": "No",
+                "fr": "Non"
+              }
+            },
+            {
+              "value": "yes",
+              "label": {
+                "en": "Yes",
+                "fr": "Oui"
+              }
+            }
           ]
         }
       ]
@@ -199,8 +346,8 @@
         "fr": "Modifier un bouton"
       },
       "description": {
-        "en": "Only the fields you fill in change. The type cannot change.",
-        "fr": "Seuls les champs remplis changent. Le type ne change pas."
+        "en": "Choose the button, then change only what you want: \"Unchanged\" and a duration of 0 leave it as it is. The type cannot change. The result lists what changed.",
+        "fr": "Choisissez le bouton, puis changez seulement ce que vous voulez : « Inchangé » et une durée de 0 le laissent tel quel. Le type ne change pas. Le résultat liste ce qui a changé."
       },
       "timeout_seconds": 15,
       "fields": [
@@ -209,8 +356,8 @@
           "type": "select",
           "source": "devices",
           "label": {
-            "en": "Button",
-            "fr": "Bouton"
+            "en": "Button (added to Gladys)",
+            "fr": "Bouton (ajouté à Gladys)"
           },
           "required": false
         },
@@ -218,8 +365,8 @@
           "key": "current_name",
           "type": "string",
           "label": {
-            "en": "Or its current name (button not created yet)",
-            "fr": "Ou son nom actuel (bouton pas encore créé)"
+            "en": "Or its current name (not added to Gladys yet)",
+            "fr": "Ou son nom actuel (pas encore ajouté à Gladys)"
           },
           "required": false
         },
@@ -227,8 +374,8 @@
           "key": "name",
           "type": "string",
           "label": {
-            "en": "New name in the widget",
-            "fr": "Nouveau nom dans le widget"
+            "en": "New name in the widget (empty: unchanged)",
+            "fr": "Nouveau nom dans le widget (vide : inchangé)"
           },
           "required": false
         },
@@ -236,11 +383,12 @@
           "key": "minutes",
           "type": "number",
           "label": {
-            "en": "New duration in minutes (timed switch)",
-            "fr": "Nouvelle durée en minutes (interrupteur temporisé)"
+            "en": "New duration in minutes, timed switch (0: unchanged)",
+            "fr": "Nouvelle durée en minutes, interrupteur temporisé (0 : inchangée)"
           },
           "required": false,
-          "min": 1,
+          "default": 0,
+          "min": 0,
           "max": 1440
         },
         {
@@ -251,27 +399,155 @@
             "fr": "Nouvelle icône"
           },
           "required": false,
+          "default": "keep",
           "options": [
-            { "value": "power", "label": { "en": "On / off", "fr": "Marche / arrêt" } },
-            { "value": "flame", "label": { "en": "Flame / heating", "fr": "Flamme / chauffage" } },
-            { "value": "thermometer", "label": { "en": "Thermometer", "fr": "Thermomètre" } },
-            { "value": "lightbulb", "label": { "en": "Light bulb", "fr": "Ampoule" } },
-            { "value": "blinds", "label": { "en": "Shutter", "fr": "Volet" } },
-            { "value": "plug", "label": { "en": "Plug", "fr": "Prise" } },
-            { "value": "fan", "label": { "en": "Fan", "fr": "Ventilateur" } },
-            { "value": "music", "label": { "en": "Music", "fr": "Musique" } },
-            { "value": "film", "label": { "en": "Movie", "fr": "Film" } },
-            { "value": "tv", "label": { "en": "Television", "fr": "Télévision" } },
-            { "value": "door-open", "label": { "en": "Door", "fr": "Porte" } },
-            { "value": "home", "label": { "en": "House", "fr": "Maison" } },
-            { "value": "moon", "label": { "en": "Moon / night", "fr": "Lune / nuit" } },
-            { "value": "sun", "label": { "en": "Sun / day", "fr": "Soleil / jour" } },
-            { "value": "bell", "label": { "en": "Alarm / bell", "fr": "Alarme / sonnette" } },
-            { "value": "star", "label": { "en": "Star", "fr": "Étoile" } },
-            { "value": "droplet", "label": { "en": "Water", "fr": "Eau" } },
-            { "value": "coffee", "label": { "en": "Coffee", "fr": "Café" } },
-            { "value": "zap", "label": { "en": "Lightning", "fr": "Éclair" } },
-            { "value": "timer", "label": { "en": "Timer", "fr": "Minuteur" } }
+            {
+              "value": "keep",
+              "label": {
+                "en": "Unchanged",
+                "fr": "Inchangé"
+              }
+            },
+            {
+              "value": "power",
+              "label": {
+                "en": "On / off",
+                "fr": "Marche / arrêt"
+              }
+            },
+            {
+              "value": "flame",
+              "label": {
+                "en": "Flame / heating",
+                "fr": "Flamme / chauffage"
+              }
+            },
+            {
+              "value": "thermometer",
+              "label": {
+                "en": "Thermometer",
+                "fr": "Thermomètre"
+              }
+            },
+            {
+              "value": "lightbulb",
+              "label": {
+                "en": "Light bulb",
+                "fr": "Ampoule"
+              }
+            },
+            {
+              "value": "blinds",
+              "label": {
+                "en": "Shutter",
+                "fr": "Volet"
+              }
+            },
+            {
+              "value": "plug",
+              "label": {
+                "en": "Plug",
+                "fr": "Prise"
+              }
+            },
+            {
+              "value": "fan",
+              "label": {
+                "en": "Fan",
+                "fr": "Ventilateur"
+              }
+            },
+            {
+              "value": "music",
+              "label": {
+                "en": "Music",
+                "fr": "Musique"
+              }
+            },
+            {
+              "value": "film",
+              "label": {
+                "en": "Movie",
+                "fr": "Film"
+              }
+            },
+            {
+              "value": "tv",
+              "label": {
+                "en": "Television",
+                "fr": "Télévision"
+              }
+            },
+            {
+              "value": "door-open",
+              "label": {
+                "en": "Door",
+                "fr": "Porte"
+              }
+            },
+            {
+              "value": "home",
+              "label": {
+                "en": "House",
+                "fr": "Maison"
+              }
+            },
+            {
+              "value": "moon",
+              "label": {
+                "en": "Moon / night",
+                "fr": "Lune / nuit"
+              }
+            },
+            {
+              "value": "sun",
+              "label": {
+                "en": "Sun / day",
+                "fr": "Soleil / jour"
+              }
+            },
+            {
+              "value": "bell",
+              "label": {
+                "en": "Alarm / bell",
+                "fr": "Alarme / sonnette"
+              }
+            },
+            {
+              "value": "star",
+              "label": {
+                "en": "Star",
+                "fr": "Étoile"
+              }
+            },
+            {
+              "value": "droplet",
+              "label": {
+                "en": "Water",
+                "fr": "Eau"
+              }
+            },
+            {
+              "value": "coffee",
+              "label": {
+                "en": "Coffee",
+                "fr": "Café"
+              }
+            },
+            {
+              "value": "zap",
+              "label": {
+                "en": "Lightning",
+                "fr": "Éclair"
+              }
+            },
+            {
+              "value": "timer",
+              "label": {
+                "en": "Timer",
+                "fr": "Minuteur"
+              }
+            }
           ]
         },
         {
@@ -282,13 +558,36 @@
             "fr": "Nouvelle couleur dans le widget"
           },
           "required": false,
+          "default": "keep",
           "options": [
-            { "value": "primary", "label": { "en": "Main (blue)", "fr": "Principal (bleu)" } },
+            {
+              "value": "keep",
+              "label": {
+                "en": "Unchanged",
+                "fr": "Inchangé"
+              }
+            },
+            {
+              "value": "primary",
+              "label": {
+                "en": "Main (blue)",
+                "fr": "Principal (bleu)"
+              }
+            },
             {
               "value": "secondary",
-              "label": { "en": "Secondary (grey)", "fr": "Secondaire (gris)" }
+              "label": {
+                "en": "Secondary (grey)",
+                "fr": "Secondaire (gris)"
+              }
             },
-            { "value": "danger", "label": { "en": "Danger (red)", "fr": "Danger (rouge)" } }
+            {
+              "value": "danger",
+              "label": {
+                "en": "Danger (red)",
+                "fr": "Danger (rouge)"
+              }
+            }
           ]
         },
         {
@@ -299,9 +598,29 @@
             "fr": "Confirmation avant l'appui (widget)"
           },
           "required": false,
+          "default": "keep",
           "options": [
-            { "value": "no", "label": { "en": "No", "fr": "Non" } },
-            { "value": "yes", "label": { "en": "Yes", "fr": "Oui" } }
+            {
+              "value": "keep",
+              "label": {
+                "en": "Unchanged",
+                "fr": "Inchangé"
+              }
+            },
+            {
+              "value": "no",
+              "label": {
+                "en": "No",
+                "fr": "Non"
+              }
+            },
+            {
+              "value": "yes",
+              "label": {
+                "en": "Yes",
+                "fr": "Oui"
+              }
+            }
           ]
         }
       ]
@@ -313,27 +632,27 @@
         "fr": "Supprimer un bouton"
       },
       "description": {
-        "en": "Then delete its device in the Devices tab if you had created it.",
-        "fr": "Supprimez ensuite son appareil dans l'onglet Appareils si vous l'aviez créé."
+        "en": "Final. Type its name to confirm. A switch that is on is turned off first. Then delete its device in the Devices tab if you had added it to Gladys.",
+        "fr": "Définitif. Tapez son nom pour confirmer. Un interrupteur en marche est d'abord mis à l'arrêt. Supprimez ensuite son appareil dans l'onglet Appareils si vous l'aviez ajouté à Gladys."
       },
       "timeout_seconds": 15,
       "fields": [
+        {
+          "key": "current_name",
+          "type": "string",
+          "label": {
+            "en": "Name of the button (to confirm)",
+            "fr": "Nom du bouton (pour confirmer)"
+          },
+          "required": true
+        },
         {
           "key": "button",
           "type": "select",
           "source": "devices",
           "label": {
-            "en": "Button",
-            "fr": "Bouton"
-          },
-          "required": false
-        },
-        {
-          "key": "current_name",
-          "type": "string",
-          "label": {
-            "en": "Or its name (button not created yet)",
-            "fr": "Ou son nom (bouton pas encore créé)"
+            "en": "Button in the list (optional, must have the name typed)",
+            "fr": "Bouton dans la liste (facultatif, doit porter le nom tapé)"
           },
           "required": false
         }

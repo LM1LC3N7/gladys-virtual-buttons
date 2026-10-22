@@ -48,7 +48,10 @@ export class FileStore {
   constructor({ dir = process.env.DATA_DIR || '/data', name = 'virtual-buttons.json' } = {}) {
     this.dir = dir;
     this.path = join(dir, name);
+    /** The file was unparsable and set aside (cleared by the next save). */
     this.corrupted = false;
+    /** The file could not be read at all: it is never overwritten. */
+    this.unreadable = false;
     this.queue = Promise.resolve();
     this.writes = 0;
   }
@@ -57,7 +60,13 @@ export class FileStore {
     let text;
     try {
       text = await readFile(this.path, 'utf8');
-    } catch {
+    } catch (err) {
+      if (err?.code === 'ENOENT') {
+        return emptyData();
+      }
+      // Present but not readable (EACCES, EIO…): never overwritten. Every
+      // save is refused until a restart reads it.
+      this.unreadable = true;
       return emptyData();
     }
     try {
@@ -76,6 +85,9 @@ export class FileStore {
 
   /** Saves a snapshot of `data` (taken now), after the writes already queued. */
   save(data) {
+    if (this.unreadable) {
+      return Promise.reject(new Error('the saved file could not be read: not overwritten'));
+    }
     const text = JSON.stringify(data);
     const run = this.queue.then(() => this.write(text));
     this.queue = run.catch(() => {});
@@ -103,6 +115,7 @@ export class FileStore {
       await rm(temporary, { force: true }).catch(() => {});
       throw err;
     }
+    this.corrupted = false;
   }
 }
 
@@ -112,6 +125,7 @@ export class MemoryStore {
     this.data = JSON.parse(JSON.stringify(data));
     this.saves = 0;
     this.corrupted = false;
+    this.unreadable = false;
     this.fail = false;
   }
 
@@ -123,8 +137,12 @@ export class MemoryStore {
     if (this.fail) {
       throw new Error('disk full');
     }
+    if (this.unreadable) {
+      throw new Error('not overwritten');
+    }
     this.data = JSON.parse(JSON.stringify(data));
     this.saves += 1;
+    this.corrupted = false;
   }
 
   flush() {

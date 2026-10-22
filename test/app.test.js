@@ -15,12 +15,16 @@ import { createClock } from './helpers/clock.js';
 
 const silent = createLogger({ level: 'silent' });
 
+/** What the real "Change a button" form sends when nothing is touched. */
+const EDIT_FORM = { name: '', minutes: 0, icon: 'keep', style: 'keep', confirm: 'keep' };
+
 async function setup({ store = new MemoryStore(), clock = createClock(), devices = [] } = {}) {
   const gladys = createFakeGladys({ devices });
   const app = new ButtonsApp({
     gladys,
     store,
     now: clock.now,
+    mono: clock.mono,
     timers: clock.timers,
     logger: silent,
   });
@@ -38,7 +42,33 @@ async function setup({ store = new MemoryStore(), clock = createClock(), devices
   };
   const states = (feature) =>
     gladys.fake.states.filter((s) => s.device_feature_external_id === feature).map((s) => s.state);
-  return { gladys, app, store, clock, add, discovered, create, states };
+  const idOf = (device) => device.external_id.split(':').pop();
+  /** Gladys as it would be read back: the last state of each feature in last_value. */
+  const withLastValues = (devices) =>
+    devices.map((d) => ({
+      ...d,
+      features: d.features.map((f) => ({
+        ...f,
+        last_value: gladys.fake.lastState(f.external_id) ?? null,
+      })),
+    }));
+  return { gladys, app, store, clock, add, discovered, create, states, idOf, withLastValues };
+}
+
+/** A publication that hangs until released (a slow host API). */
+function hold(ctx, gladys) {
+  const original = gladys.publishStates.bind(gladys);
+  const waiting = [];
+  ctx.mock.method(gladys, 'publishStates', async (states) => {
+    await new Promise((resolve) => waiting.push(resolve));
+    return original(states);
+  });
+  return () => {
+    ctx.mock.restoreAll();
+    for (const resolve of waiting.splice(0)) {
+      resolve();
+    }
+  };
 }
 
 test('a push button: in Discovery, then one press = 1 then 0', async () => {
@@ -51,7 +81,8 @@ test('a push button: in Discovery, then one press = 1 then 0', async () => {
     confirm: 'yes',
   });
   assert.equal(ack.success, true);
-  assert.match(ack.data.message.fr, /Découverte/);
+  assert.match(ack.data.message.fr, /« Ajouter à Gladys »/);
+  assert.match(ack.data.message.en, /"Add to Gladys"/);
   const device = t.discovered('Chauffage 30 min');
   assert.match(device.external_id, /^ext:test-integration:button:b[0-9a-f]{12}$/);
   assert.deepEqual(
@@ -74,7 +105,6 @@ test('a push button: in Discovery, then one press = 1 then 0', async () => {
   const before = t.states(feature.external_id).length;
   const result = await t.gladys.fake.setValue(device, feature, 1);
   assert.deepEqual(result, { success: true });
-  await t.clock.settle();
   assert.deepEqual(t.states(feature.external_id).slice(before), [1]);
   await t.clock.advance(1000);
   assert.deepEqual(t.states(feature.external_id).slice(before), [1, 0]);
@@ -112,7 +142,7 @@ test('a switch: state saved in /data before the ack, published, strict values', 
   assert.equal(ack.success, false);
 });
 
-test('a timed switch goes back to off on time, and the end is kept in /data', async () => {
+test('a timed switch goes back to off on time, "on" again restarts it without a new 1', async () => {
   const t = await setup();
   await t.add({ name: 'Chauffe-eau', kind: 'timed', minutes: 10, icon: 'droplet' });
   const device = await t.create('Chauffe-eau');
@@ -123,8 +153,10 @@ test('a timed switch goes back to off on time, and the end is kept in /data', as
   assert.equal(saved.until, t.clock.now() + 10 * 60 * 1000);
   await t.clock.advance(9 * 60 * 1000);
   assert.equal(t.gladys.fake.lastState(feature.external_id), 1);
-  // On again: the delay starts over.
+  const ones = t.states(feature.external_id).filter((v) => v === 1).length;
+  // On again: the delay starts over, Gladys already holds 1.
   await t.gladys.fake.setValue(device, feature, 1);
+  assert.equal(t.states(feature.external_id).filter((v) => v === 1).length, ones);
   await t.clock.advance(9 * 60 * 1000);
   assert.equal(t.gladys.fake.lastState(feature.external_id), 1);
   await t.clock.advance(60 * 1000);
@@ -142,17 +174,18 @@ test('after a restart: an end passed turns off at once, an end to come keeps its
   const fan = await t.create('Ventilation');
   await t.gladys.fake.setValue(water, water.features[0], 1);
   await t.gladys.fake.setValue(fan, fan.features[0], 1);
+  const devices = t.withLastValues([water, fan]);
   await t.app.stop();
   await t.gladys.disconnect();
 
   // The container was stopped 20 minutes.
   clock.set(clock.now() + 20 * 60 * 1000);
-  const again = await setup({ store: t.store, clock, devices: [water, fan] });
+  const again = await setup({ store: t.store, clock, devices });
   const byName = (name) => again.store.data.buttons.find((b) => b.name === name);
   assert.equal(byName('Arrosage').state, 0);
-  assert.equal(again.gladys.fake.lastState(water.features[0].external_id), 0);
+  assert.deepEqual(again.states(water.features[0].external_id), [0]);
   assert.equal(byName('Ventilation').state, 1);
-  assert.equal(again.gladys.fake.lastState(fan.features[0].external_id), 1);
+  assert.deepEqual(again.states(fan.features[0].external_id), [], 'Gladys holds 1 already');
   await clock.advance(39 * 60 * 1000);
   assert.equal(byName('Ventilation').state, 1);
   await clock.advance(61 * 1000);
@@ -165,9 +198,20 @@ test('a timer is never lost: the sweep catches a clock moved forward', async () 
   await t.add({ name: 'Sieste', kind: 'timed', minutes: 30 });
   const device = await t.create('Sieste');
   await t.gladys.fake.setValue(device, device.features[0], 1);
-  // The wall clock jumps (NTP, suspend): the next sweep sees the end passed.
-  t.clock.set(t.clock.now() + 31 * 60 * 1000);
+  t.clock.jump(31 * 60 * 1000);
   await t.clock.advance(30 * 1000);
+  assert.equal(t.gladys.fake.lastState(device.features[0].external_id), 0);
+});
+
+test('S3: the wall clock stepped back 2 h: a 30 min timed switch still ends after 30 min', async () => {
+  const t = await setup();
+  await t.add({ name: 'Chauffage', kind: 'timed', minutes: 30 });
+  const device = await t.create('Chauffage');
+  await t.gladys.fake.setValue(device, device.features[0], 1);
+  await t.clock.advance(60 * 1000);
+  t.clock.jump(-2 * 3600 * 1000);
+  await t.clock.advance(29 * 60 * 1000);
+  assert.equal(t.app.buttons.get(t.idOf(device)).state, 0);
   assert.equal(t.gladys.fake.lastState(device.features[0].external_id), 0);
 });
 
@@ -190,6 +234,101 @@ test('a switch "on" that cannot be saved is refused; "off" never is', async () =
   assert.equal(t.store.data.buttons[0].state, 0, 'saved again by the sweep');
 });
 
+test('S2: an "off" is never held behind a slow publication', async (ctx) => {
+  const t = await setup();
+  await t.add({ name: 'Chauffage', kind: 'timed', minutes: 1 });
+  await t.add({ name: 'Mode nuit', kind: 'switch' });
+  const timed = await t.create('Chauffage');
+  const sw = await t.create('Mode nuit');
+  await t.gladys.fake.setValue(timed, timed.features[0], 1);
+  await t.gladys.fake.setValue(sw, sw.features[0], 1);
+  const release = hold(ctx, t.gladys);
+  await t.clock.advance(60 * 1000); // the timed switch ends; its 0 hangs
+  const ack = await t.gladys.fake.setValue(sw, sw.features[0], 0);
+  assert.equal(ack.success, true, 'acknowledged while the publication hangs');
+  assert.equal(t.app.buttons.get(t.idOf(sw)).state, 0);
+  release();
+  await t.clock.settle();
+  assert.equal(t.gladys.fake.lastState(sw.features[0].external_id), 0);
+});
+
+test('S2b: an "on" or a press applied after 3.5 s is refused, nothing sent; an "off" is applied', async (ctx) => {
+  const t = await setup();
+  await t.add({ name: 'Portail', kind: 'switch' });
+  await t.add({ name: 'Ciné', kind: 'push' });
+  const sw = await t.create('Portail');
+  const push = await t.create('Ciné');
+  // /data is slow: the queue is held 20 s by an action saving the list.
+  let releaseSave;
+  const save = t.store.save.bind(t.store);
+  const slowOnce = () => {
+    t.store.save = async (data) => {
+      t.store.save = save;
+      await new Promise((resolve) => (releaseSave = resolve));
+      return save(data);
+    };
+  };
+  slowOnce();
+  const adding = t.add({ name: 'Autre' });
+  while (!releaseSave) {
+    await t.clock.settle();
+  }
+  const on = t.gladys.fake.setValue(sw, sw.features[0], 1);
+  await t.clock.advance(20 * 1000);
+  releaseSave();
+  await adding;
+  const late = await on;
+  assert.equal(late.success, false);
+  assert.match(late.error, /trop tard/);
+  assert.equal(t.app.buttons.get(t.idOf(sw)).state, 0);
+  assert.deepEqual(t.states(sw.features[0].external_id), [0], 'only its first state');
+
+  // A press whose 1 waits behind a hanging publication: refused, never sent later.
+  const release = hold(ctx, t.gladys);
+  await t.gladys.fake.setValue(sw, sw.features[0], 1); // its 1 hangs
+  const press = t.gladys.fake.setValue(push, push.features[0], 1);
+  await t.clock.advance(5000);
+  const refused = await press;
+  assert.equal(refused.success, false);
+  assert.match(refused.error, /trop tard/);
+  release();
+  await t.clock.advance(5000);
+  assert.deepEqual(t.states(push.features[0].external_id), [0], 'no late 1');
+
+  // An "off" always applies, however late.
+  assert.equal(t.app.buttons.get(t.idOf(sw)).state, 1);
+  releaseSave = null;
+  slowOnce();
+  const adding2 = t.add({ name: 'Encore' });
+  while (!releaseSave) {
+    await t.clock.settle();
+  }
+  const off = t.gladys.fake.setValue(sw, sw.features[0], 0);
+  await t.clock.advance(20 * 1000);
+  releaseSave();
+  await adding2;
+  assert.equal((await off).success, true);
+  assert.equal(t.app.buttons.get(t.idOf(sw)).state, 0);
+});
+
+test('S7: a press Gladys refused is "not sent", never "pressed", never sent again', async (ctx) => {
+  const t = await setup();
+  await t.add({ name: 'Ciné', kind: 'push' });
+  const device = await t.create('Ciné');
+  ctx.mock.method(t.gladys, 'publishStates', async () => {
+    throw new Error('429');
+  });
+  const tap = await t.gladys.fake.widgetAction(WIDGETS.BUTTONS, 'press_1', {
+    id: t.idOf(device),
+    value: 1,
+  });
+  assert.equal(tap.success, false);
+  assert.match(tap.error, /rien envoyé/);
+  ctx.mock.restoreAll();
+  await t.clock.advance(60 * 1000);
+  assert.deepEqual(t.states(device.features[0].external_id), [0], 'only its first state');
+});
+
 test('a scene that presses its own button in a loop is stopped', async () => {
   const t = await setup();
   await t.add({ name: 'Boucle' });
@@ -203,6 +342,27 @@ test('a scene that presses its own button in a loop is stopped', async () => {
   assert.match(refused.error, /une minute/);
   await t.clock.advance(61 * 1000);
   assert.equal((await t.gladys.fake.setValue(device, feature, 1)).success, true);
+});
+
+test('S11: a scene "X = Off -> turn X off" does not loop, and "off" is never refused', async () => {
+  const t = await setup();
+  await t.add({ name: 'Mode nuit', kind: 'switch' });
+  const device = await t.create('Mode nuit');
+  const feature = device.features[0];
+  await t.gladys.fake.setValue(device, feature, 1);
+  const count = () => t.states(feature.external_id).length;
+  await t.gladys.fake.setValue(device, feature, 0);
+  const after = count();
+  for (let i = 0; i < 50; i += 1) {
+    assert.equal((await t.gladys.fake.setValue(device, feature, 0)).success, true);
+  }
+  await t.clock.advance(60 * 1000);
+  assert.equal(count(), after, 'an "off" of a switch already off publishes nothing');
+  // Same for "on" of a plain switch already on.
+  await t.gladys.fake.setValue(device, feature, 1);
+  const on = count();
+  await t.gladys.fake.setValue(device, feature, 1);
+  assert.equal(count(), on);
 });
 
 test('names are cleaned and bounded, unique, and at most 100 buttons', async () => {
@@ -220,6 +380,7 @@ test('names are cleaned and bounded, unique, and at most 100 buttons', async () 
   for (const [field, value] of [
     ['kind', 'light'],
     ['icon', 'skull'],
+    ['icon', 'keep'],
     ['style', 'pink'],
     ['confirm', 'maybe'],
     ['minutes', 0],
@@ -247,42 +408,92 @@ test('names are cleaned and bounded, unique, and at most 100 buttons', async () 
   }
 });
 
-test('change a button by its device or by its name; the type and the ids never change', async () => {
+test('change a button: "Unchanged" by default, the message lists the changes, ids never change', async () => {
   const t = await setup();
   await t.add({ name: 'Cinéma', kind: 'switch', icon: 'film' });
   const before = t.discovered('Cinéma');
+  const untouched = await t.gladys.fake.action(ACTIONS.EDIT, {
+    ...EDIT_FORM,
+    current_name: 'cinema',
+  });
+  assert.equal(untouched.success, false);
+  assert.match(untouched.error, /Inchangé/);
   const edited = await t.gladys.fake.action(ACTIONS.EDIT, {
+    ...EDIT_FORM,
     current_name: 'cinema',
     name: 'Soirée film',
     icon: 'tv',
-    style: 'danger',
     confirm: 'yes',
     kind: 'push',
   });
   assert.equal(edited.success, true);
+  assert.match(
+    edited.data.message.fr,
+    /nom : Soirée film ; icône : Télévision ; couleur : inchangé/,
+  );
+  assert.match(edited.data.message.fr, /confirmation : oui ; durée : inchangé/);
   const after = t.gladys.fake.discoveredDevices[0];
   assert.equal(after.external_id, before.external_id);
   assert.equal(after.features[0].external_id, before.features[0].external_id);
   assert.equal(after.features[0].category, 'switch');
   const params = Object.fromEntries(after.params.map((p) => [p.name, p.value]));
   assert.equal(params.VB_ICON, 'tv');
+  assert.equal(params.VB_STYLE, 'primary');
   assert.equal(params.VB_LABEL, 'Soirée film');
   assert.equal(params.VB_CONFIRM, 'true');
-  const empty = await t.gladys.fake.action(ACTIONS.EDIT, { button: before.external_id });
-  assert.equal(empty.success, false);
-  const unknown = await t.gladys.fake.action(ACTIONS.EDIT, { current_name: 'Nope', icon: 'sun' });
+  assert.equal(params.VB_MINUTES, '30');
+  const unknown = await t.gladys.fake.action(ACTIONS.EDIT, {
+    ...EDIT_FORM,
+    current_name: 'Nope',
+    icon: 'sun',
+  });
   assert.match(unknown.error, /Aucun bouton/);
-  const missing = await t.gladys.fake.action(ACTIONS.EDIT, { icon: 'sun' });
+  const missing = await t.gladys.fake.action(ACTIONS.EDIT, { ...EDIT_FORM, icon: 'sun' });
   assert.equal(missing.success, false);
 });
 
-test('remove a button: gone from Discovery, its device refused, never brought back', async () => {
+test('S10: the values a form kept are never carried silently to another button', async () => {
+  const t = await setup();
+  await t.add({ name: 'A' });
+  await t.add({ name: 'B' });
+  const form = { ...EDIT_FORM, icon: 'flame', style: 'danger' };
+  assert.equal(
+    (await t.gladys.fake.action(ACTIONS.EDIT, { ...form, current_name: 'A' })).success,
+    true,
+  );
+  // The user picks B, the form still says flame / danger.
+  const kept = await t.gladys.fake.action(ACTIONS.EDIT, { ...form, current_name: 'B' });
+  assert.equal(kept.success, false);
+  assert.match(kept.error, /Rechargez la page/);
+  const b = () => [...t.app.buttons.values()].find((x) => x.name === 'B');
+  assert.equal(b().icon, 'power');
+  // Asked again on purpose: applied.
+  assert.equal(
+    (await t.gladys.fake.action(ACTIONS.EDIT, { ...form, current_name: 'B' })).success,
+    true,
+  );
+  assert.equal(b().icon, 'flame');
+});
+
+test('remove a button: name typed to confirm, gone from Discovery, never brought back', async () => {
   const t = await setup();
   await t.add({ name: 'Alarme', kind: 'push' });
   await t.add({ name: 'Garde', kind: 'switch' });
   const device = await t.create('Alarme');
-  const removed = await t.gladys.fake.action(ACTIONS.REMOVE, { button: device.external_id });
+  const noName = await t.gladys.fake.action(ACTIONS.REMOVE, { button: device.external_id });
+  assert.match(noName.error, /définitive/);
+  const wrong = await t.gladys.fake.action(ACTIONS.REMOVE, {
+    button: device.external_id,
+    current_name: 'Garde',
+  });
+  assert.match(wrong.error, /rien n'est supprimé/);
+  assert.equal(t.app.buttons.size, 2);
+  const removed = await t.gladys.fake.action(ACTIONS.REMOVE, {
+    button: device.external_id,
+    current_name: 'alarme',
+  });
   assert.equal(removed.success, true);
+  assert.match(removed.data.message.fr, /définitivement/);
   assert.deepEqual(
     t.gladys.fake.discoveredDevices.map((d) => d.name),
     ['Garde'],
@@ -290,12 +501,58 @@ test('remove a button: gone from Discovery, its device refused, never brought ba
   const press = await t.gladys.fake.setValue(device, device.features[0], 1);
   assert.equal(press.success, false);
   assert.match(press.error, /supprimez son appareil/);
-  // A reconnection with the device still in Gladys does not bring it back.
   await t.gladys.disconnect();
   await t.gladys.connect();
   await t.clock.settle();
   assert.equal(t.app.buttons.size, 1);
   assert.deepEqual(t.store.data.removed.length, 1);
+});
+
+test('S4: removing a switch that is on publishes 0 first; refused if Gladys does not take it', async (ctx) => {
+  const t = await setup();
+  await t.add({ name: 'Chauffage', kind: 'timed', minutes: 30 });
+  const device = await t.create('Chauffage');
+  const feature = device.features[0];
+  await t.gladys.fake.setValue(device, feature, 1);
+  ctx.mock.method(t.gladys, 'publishStates', async () => {
+    throw new Error('503');
+  });
+  const refused = await t.gladys.fake.action(ACTIONS.REMOVE, { current_name: 'Chauffage' });
+  assert.equal(refused.success, false);
+  assert.match(refused.error, /rien n'est supprimé/);
+  assert.equal(t.app.buttons.size, 1);
+  assert.equal(t.app.buttons.get(t.idOf(device)).state, 0, 'off anyway');
+  ctx.mock.restoreAll();
+  await t.clock.advance(30 * 1000);
+  assert.equal(t.gladys.fake.lastState(feature.external_id), 0, 'sent again by the sweep');
+
+  await t.gladys.fake.setValue(device, feature, 1);
+  const removed = await t.gladys.fake.action(ACTIONS.REMOVE, { current_name: 'Chauffage' });
+  assert.equal(removed.success, true);
+  assert.match(removed.data.message.fr, /mis à l'arrêt d'abord/);
+  assert.equal(t.gladys.fake.lastState(feature.external_id), 0);
+});
+
+test('S6: Discovery publications are serialized, the last one has the current list', async (ctx) => {
+  const t = await setup();
+  const original = t.gladys.publishDiscoveredDevices.bind(t.gladys);
+  let releaseFirst;
+  let calls = 0;
+  ctx.mock.method(t.gladys, 'publishDiscoveredDevices', async (devices) => {
+    calls += 1;
+    if (calls === 1) {
+      await new Promise((resolve) => (releaseFirst = resolve));
+    }
+    return original(devices);
+  });
+  // A slow Discovery never holds an action.
+  assert.equal((await t.add({ name: 'Ciné', kind: 'push' })).success, true);
+  const removed = await t.gladys.fake.action(ACTIONS.REMOVE, { current_name: 'Ciné' });
+  assert.equal(removed.success, true);
+  releaseFirst();
+  await t.clock.settle();
+  assert.equal(calls, 2);
+  assert.deepEqual(t.gladys.fake.discoveredDevices, []);
 });
 
 test('/data lost: the buttons come back from the devices Gladys kept', async () => {
@@ -307,60 +564,81 @@ test('/data lost: the buttons come back from the devices Gladys kept', async () 
     icon: 'flame',
     style: 'danger',
   });
-  const device = await first.create('Chauffage');
+  await first.add({ name: 'Nuit', kind: 'switch' });
+  const heating = await first.create('Chauffage');
+  const night = await first.create('Nuit');
+  await first.gladys.fake.setValue(heating, heating.features[0], 1);
+  await first.gladys.fake.setValue(night, night.features[0], 1);
+  const devices = first.withLastValues([heating, night]);
   await first.app.stop();
 
-  const again = await setup({ devices: [device] });
-  const [button] = again.store.data.buttons;
+  const again = await setup({ devices });
+  const [button, plain] = again.store.data.buttons;
   assert.equal(button.name, 'Chauffage');
   assert.equal(button.kind, 'timed');
   assert.equal(button.minutes, 45);
   assert.equal(button.icon, 'flame');
   assert.equal(button.style, 'danger');
-  assert.equal(button.state, 0);
-  assert.equal(again.gladys.fake.discoveredDevices[0].external_id, device.external_id);
+  assert.equal(button.state, 0, 'a timed switch comes back off (its end is unknown)');
+  assert.deepEqual(again.states(heating.features[0].external_id), [0]);
+  assert.equal(plain.state, 1, 'a plain switch takes back the value of Gladys');
+  assert.deepEqual(again.states(night.features[0].external_id), []);
+  assert.equal(again.gladys.fake.discoveredDevices[0].external_id, heating.external_id);
 });
 
-test('every connection publishes Discovery, the status and the states again', async () => {
+test('S1: every connection publishes Discovery and status, never a value Gladys holds', async () => {
   const t = await setup();
   await t.add({ name: 'Lecture', kind: 'switch' });
   const device = await t.create('Lecture');
-  await t.gladys.fake.setValue(device, device.features[0], 1);
+  const feature = device.features[0];
+  await t.gladys.fake.setValue(device, feature, 1);
   await t.clock.settle();
   const discoveries = t.gladys.fake.requests.filter((r) => r.path === '/discovered_device').length;
   const statuses = t.gladys.fake.connectionStatuses.length;
-  const count = t.states(device.features[0].external_id).length;
-  await t.gladys.disconnect();
-  await t.gladys.connect();
-  await t.clock.settle();
+  const count = t.states(feature.external_id).length;
+  for (let i = 0; i < 2; i += 1) {
+    await t.gladys.disconnect();
+    await t.gladys.connect();
+    await t.clock.settle();
+  }
   assert.equal(
     t.gladys.fake.requests.filter((r) => r.path === '/discovered_device').length,
-    discoveries + 1,
+    discoveries + 2,
   );
-  assert.equal(t.gladys.fake.connectionStatuses.length, statuses + 1);
-  assert.match(t.gladys.fake.connectionStatus.message.fr, /1 bouton\(s\), dont 1 créé/);
-  assert.deepEqual(t.states(device.features[0].external_id).slice(count), [1]);
+  assert.equal(t.gladys.fake.connectionStatuses.length, statuses + 2);
+  assert.match(t.gladys.fake.connectionStatus.message.fr, /1 bouton\(s\), dont 1 ajouté/);
+  assert.deepEqual(t.states(feature.external_id).slice(count), [], 'no scene started again');
+
+  // A new process (restart): Gladys holds 1 already, nothing is sent; it
+  // holds 0 while /data says 1: the 1 is sent.
+  await t.app.stop();
+  const same = await setup({ store: t.store, devices: t.withLastValues([device]) });
+  assert.deepEqual(same.states(feature.external_id), []);
+  const stale = t.withLastValues([device]);
+  stale[0].features[0].last_value = 0;
+  const differ = await setup({ store: t.store, devices: stale });
+  assert.deepEqual(differ.states(feature.external_id), [1]);
 });
 
-test('a state Gladys refused is sent again, a push "1" never late', async (ctx) => {
+test('S5: the widget sends the value the card showed, never a toggle', async () => {
   const t = await setup();
-  await t.add({ name: 'Volet', kind: 'switch', icon: 'blinds' });
-  await t.add({ name: 'Sonnette', kind: 'push', icon: 'bell' });
-  const blinds = await t.create('Volet');
-  const bell = await t.create('Sonnette');
-  const original = t.gladys.publishState.bind(t.gladys);
-  const mock = ctx.mock.method(t.gladys, 'publishState', async () => {
-    throw new Error('429');
+  await t.add({ name: 'Chauffage', kind: 'timed', minutes: 1 });
+  const device = await t.create('Chauffage');
+  await t.gladys.fake.setValue(device, device.features[0], 1);
+  const shown = await t.gladys.fake.widgetGet(WIDGETS.BUTTONS, {
+    settings: { button_1: device.external_id },
   });
-  await t.gladys.fake.setValue(blinds, blinds.features[0], 1);
-  await t.gladys.fake.setValue(bell, bell.features[0], 1);
-  await t.clock.advance(2000);
-  mock.mock.restore();
-  assert.equal(typeof original, 'function');
-  const before = t.states(bell.features[0].external_id).length;
-  await t.clock.advance(30 * 1000);
-  assert.equal(t.gladys.fake.lastState(blinds.features[0].external_id), 1);
-  assert.deepEqual(t.states(bell.features[0].external_id).slice(before), [0]);
+  const pill = shown.data.content.components.find((c) => c.type === 'button');
+  assert.equal(pill.style, 'primary', 'the card shows "on"');
+  assert.deepEqual(pill.action.params, { id: t.idOf(device), value: 0 });
+  await t.clock.advance(61 * 1000); // the timer ends; the card is still cached
+  const tap = await t.gladys.fake.widgetAction(
+    WIDGETS.BUTTONS,
+    pill.action.key,
+    pill.action.params,
+  );
+  assert.match(tap.data.message.fr, /déjà à l'arrêt/);
+  assert.equal(t.app.buttons.get(t.idOf(device)).state, 0);
 });
 
 test('the widget: up to 4 pills, icon, label, style, confirmation, switch state', async () => {
@@ -403,19 +681,19 @@ test('the widget: up to 4 pills, icon, label, style, confirmation, switch state'
       ['Nuit', 'moon', 'secondary', 'press_3', false],
     ],
   );
+  const tap = (pill) =>
+    t.gladys.fake.widgetAction(WIDGETS.BUTTONS, pill.action.key, pill.action.params, { settings });
 
-  // Taps: the timed switch turns on, the push button pulses.
-  const tap = await t.gladys.fake.widgetAction(WIDGETS.BUTTONS, 'press_1', pills[0].action.params, {
-    settings,
-  });
-  assert.equal(tap.success, true);
-  assert.match(tap.data.message.fr, /retour à l'arrêt dans 20 min/);
-  await t.gladys.fake.widgetAction(WIDGETS.BUTTONS, 'press_2', pills[1].action.params, {
-    settings,
-  });
-  await t.clock.settle();
+  const on = await tap(pills[0]);
+  assert.equal(on.success, true);
+  assert.match(on.data.message.fr, /retour à l'arrêt dans 20 min/);
+  const pressed = await tap(pills[1]);
+  assert.match(pressed.data.message.fr, /appui pris par Gladys/);
   assert.equal(t.gladys.fake.lastState(gate.features[0].external_id), 1);
   assert.ok(t.gladys.fake.widgetRefreshes.includes(WIDGETS.BUTTONS));
+  // The same stale pill tapped again: already on, duration started again.
+  const again = await tap(pills[0]);
+  assert.match(again.data.message.fr, /déjà en marche, durée relancée/);
 
   ack = await t.gladys.fake.widgetGet(WIDGETS.BUTTONS, { settings });
   content = ack.data.content;
@@ -426,24 +704,24 @@ test('the widget: up to 4 pills, icon, label, style, confirmation, switch state'
   assert.match(caption.text.fr, /encore 20 min/);
   assert.equal(content.ttl_seconds, 15);
 
-  // Tap again: off.
-  const off = await t.gladys.fake.widgetAction(WIDGETS.BUTTONS, 'press_1', pills[0].action.params, {
-    settings,
-  });
+  const off = await tap(pills[0]);
   assert.match(off.data.message.en, /off/);
   assert.equal(t.store.data.buttons[0].state, 0);
 
   // Forged or stale taps.
   for (const [key, params] of [
     ['press_9', pills[0].action.params],
-    ['press_1', { id: 'b000000000000' }],
-    ['press_1', { id: { toString: () => 'x' } }],
+    ['press_1', { id: 'b000000000000', value: 1 }],
+    ['press_1', { id: { toString: () => 'x' }, value: 1 }],
+    ['press_1', { id: t.idOf(heating) }],
+    ['press_1', { id: t.idOf(heating), value: '1' }],
+    ['press_2', { id: t.idOf(gate), value: 0 }],
     ['press_1', null],
   ]) {
     const refused = await t.gladys.fake.widgetAction(WIDGETS.BUTTONS, key, params ?? {}, {
       settings,
     });
-    assert.equal(refused.success, false);
+    assert.equal(refused.success, false, JSON.stringify(params));
   }
 });
 
@@ -456,6 +734,26 @@ test('the widget empty states are valid contents', async () => {
     settings: { button_1: 'ext:test-integration:button:b0123456789ab' },
   });
   assert.match(gone.data.content.components[0].text.fr, /supprimés/);
+});
+
+test('M9: the "unreadable list" status is lifted by the first good save', async () => {
+  const store = new MemoryStore();
+  store.corrupted = true;
+  const t = await setup({ store });
+  assert.match(t.gladys.fake.connectionStatus.message.fr, /illisible/);
+  await t.add({ name: 'A' });
+  await t.clock.settle();
+  assert.match(t.gladys.fake.connectionStatus.message.fr, /1 bouton\(s\)/);
+});
+
+test('M5: a list that cannot be read is never overwritten', async () => {
+  const store = new MemoryStore();
+  store.unreadable = true;
+  const t = await setup({ store });
+  assert.match(t.gladys.fake.connectionStatus.message.fr, /ne peut pas être lue/);
+  const ack = await t.add({ name: 'A' });
+  assert.equal(ack.success, false);
+  assert.equal(store.saves, 0);
 });
 
 test('the states stay within the budget of the host API', async () => {

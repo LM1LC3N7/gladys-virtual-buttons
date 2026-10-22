@@ -16,6 +16,7 @@ import {
   DEVICE_TYPE,
   FEATURES,
   ICONS,
+  KEEP,
   KIND_LIST,
   KINDS,
   LIMITS,
@@ -117,11 +118,15 @@ export function sanitizeButton(raw, now = Date.now()) {
  */
 export function readFields(fields, { partial = false } = {}) {
   const input = fields && typeof fields === 'object' ? fields : {};
+  // In "Change a button", "keep" (the default of the selects) and a duration
+  // of 0 (the default of the number) mean "leave as it is": the real form
+  // sends every field, and the core refuses an empty select.
   const has = (key) =>
     Object.hasOwn(input, key) &&
     input[key] !== undefined &&
     input[key] !== null &&
-    input[key] !== '';
+    input[key] !== '' &&
+    !(partial && (input[key] === KEEP || (key === 'minutes' && input[key] === 0)));
   const values = {};
   if (has('name') || !partial) {
     values.name = cleanName(input.name);
@@ -227,7 +232,7 @@ export function deviceOf(gladys, button) {
   };
 }
 
-/** A button rebuilt from a device Gladys kept, or null. Starts off. */
+/** A button rebuilt from a device Gladys kept, or null. */
 export function buttonFromDevice(gladys, device) {
   const id = idOfDevice(gladys, device?.external_id);
   if (!id) {
@@ -239,12 +244,15 @@ export function buttonFromDevice(gladys, device) {
       params.set(param.name, param.value);
     }
   }
+  const feature = Array.isArray(device.features) ? device.features[0] : null;
   let kind = params.get(PARAMS.KIND);
   if (!KIND_LIST.includes(kind)) {
     // No param: the feature tells a push button from a switch.
-    const feature = Array.isArray(device.features) ? device.features[0] : null;
     kind = feature?.category === DEVICE_FEATURE_CATEGORIES.SWITCH ? KINDS.SWITCH : KINDS.PUSH;
   }
+  // A plain switch takes back the value Gladys holds (nothing published, no
+  // scene started); a timed switch always starts off (its end is unknown).
+  const state = kind === KINDS.SWITCH && feature?.last_value === 1 ? 1 : 0;
   return sanitizeButton({
     id,
     name: params.get(PARAMS.LABEL) || device.name,
@@ -253,6 +261,6 @@ export function buttonFromDevice(gladys, device) {
     style: params.get(PARAMS.STYLE),
     confirm: params.get(PARAMS.CONFIRM) === 'true',
     minutes: params.get(PARAMS.MINUTES),
-    state: 0,
+    state,
   });
 }
