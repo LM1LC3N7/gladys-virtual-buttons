@@ -1,177 +1,400 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Virtual buttons",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Your own buttons, switches and timed switches, with an icon, to start your scenes.",
+    "fr": "Vos propres boutons, interrupteurs et minuteries, avec une icône, pour lancer vos scènes."
   },
-  "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "version": "0.1.0",
+  "docker_image": "ghcr.io/lm1lc3n7/gladys-virtual-buttons:0.1.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/LM1LC3N7/gladys-virtual-buttons/main/cover.png",
+  "categories": ["services"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Create your own buttons",
+        "fr": "Créez vos propres boutons"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "1. Click \"Add a button\" below: a name, a type, an icon. 2. Open the Discovery tab and click \"Create\" next to the button. 3. Create a scene \"when the button changes to 1\" that does what you want. 4. Add the \"Buttons\" widget on your dashboard. The button does nothing by itself: the scene acts. Never use a switch for a sensitive command (gate, alarm, boiler): a \"turn everything off\", the voice or a scene can reach it; use a push button with confirmation. Tested with a fake Gladys only.",
+        "fr": "1. Cliquez sur « Ajouter un bouton » ci-dessous : un nom, un type, une icône. 2. Ouvrez l'onglet Découverte et cliquez sur « Créer » à côté du bouton. 3. Créez une scène « quand le bouton passe à 1 » qui fait ce que vous voulez. 4. Ajoutez le widget « Boutons » sur votre tableau de bord. Le bouton ne fait rien tout seul : c'est la scène qui agit. N'utilisez jamais un interrupteur pour une commande sensible (portail, alarme, chaudière) : un « tout éteindre », la voix ou une scène peut l'atteindre ; prenez un bouton poussoir avec confirmation. Testé seulement avec un faux Gladys."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://github.com/LM1LC3N7/gladys-virtual-buttons/blob/main/docs/fr.md",
+          "label": {
+            "en": "Step-by-step guide (French)",
+            "fr": "Guide pas à pas (français)"
+          }
+        },
+        {
+          "url": "https://github.com/LM1LC3N7/gladys-virtual-buttons/blob/main/docs/en.md",
+          "label": {
+            "en": "Step-by-step guide (English)",
+            "fr": "Guide pas à pas (anglais)"
+          }
         }
       ]
-    },
-    {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
-    },
-    {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
-    },
-    {
-      "key": "unit",
-      "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
-      "required": false,
-      "default": "celsius",
-      "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
-      ]
-    },
-    {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
-      "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
-      },
-      "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
-    }
-  ],
-  "scene_triggers": [
-    {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
-      "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+      "key": "add_button",
+      "label": {
+        "en": "Add a button",
+        "fr": "Ajouter un bouton"
       },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
-        },
-        {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
-        }
-      ],
-      "variables": [
-        {
-          "key": "target",
-          "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
-        }
-      ]
-    }
-  ],
-  "scene_actions": [
-    {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
       "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+        "en": "Up to 100 buttons. Then create it in the Discovery tab.",
+        "fr": "100 boutons au plus. Créez-le ensuite dans l'onglet Découverte."
       },
       "timeout_seconds": 15,
       "fields": [
         {
-          "key": "device",
+          "key": "name",
+          "type": "string",
+          "label": {
+            "en": "Name",
+            "fr": "Nom"
+          },
+          "description": {
+            "en": "Up to 40 characters; the widget shows the first 24.",
+            "fr": "40 caractères au plus ; le widget affiche les 24 premiers."
+          },
+          "placeholder": {
+            "en": "Heating",
+            "fr": "Chauffage"
+          },
+          "required": true
+        },
+        {
+          "key": "kind",
+          "type": "select",
+          "display": "radio",
+          "label": {
+            "en": "Type of button",
+            "fr": "Type de bouton"
+          },
+          "description": {
+            "en": "Cannot be changed later.",
+            "fr": "Ne peut plus être changé ensuite."
+          },
+          "required": true,
+          "default": "push",
+          "options": [
+            {
+              "value": "push",
+              "label": {
+                "en": "Push button: one press = one pulse, to start a scene",
+                "fr": "Bouton poussoir : un appui = une impulsion, pour lancer une scène"
+              }
+            },
+            {
+              "value": "switch",
+              "label": {
+                "en": "Switch: on / off, remembered",
+                "fr": "Interrupteur : marche / arrêt, mémorisé"
+              }
+            },
+            {
+              "value": "timed",
+              "label": {
+                "en": "Timed switch: goes back to off by itself after the duration below",
+                "fr": "Interrupteur temporisé : revient seul à l'arrêt après la durée ci-dessous"
+              }
+            }
+          ]
+        },
+        {
+          "key": "minutes",
+          "type": "number",
+          "label": {
+            "en": "Duration in minutes (timed switch only)",
+            "fr": "Durée en minutes (interrupteur temporisé seulement)"
+          },
+          "description": {
+            "en": "From 1 to 1440 (24 hours).",
+            "fr": "De 1 à 1440 (24 heures)."
+          },
+          "required": false,
+          "default": 30,
+          "min": 1,
+          "max": 1440
+        },
+        {
+          "key": "icon",
+          "type": "select",
+          "label": {
+            "en": "Icon",
+            "fr": "Icône"
+          },
+          "required": false,
+          "default": "power",
+          "options": [
+            { "value": "power", "label": { "en": "On / off", "fr": "Marche / arrêt" } },
+            { "value": "flame", "label": { "en": "Flame / heating", "fr": "Flamme / chauffage" } },
+            { "value": "thermometer", "label": { "en": "Thermometer", "fr": "Thermomètre" } },
+            { "value": "lightbulb", "label": { "en": "Light bulb", "fr": "Ampoule" } },
+            { "value": "blinds", "label": { "en": "Shutter", "fr": "Volet" } },
+            { "value": "plug", "label": { "en": "Plug", "fr": "Prise" } },
+            { "value": "fan", "label": { "en": "Fan", "fr": "Ventilateur" } },
+            { "value": "music", "label": { "en": "Music", "fr": "Musique" } },
+            { "value": "film", "label": { "en": "Movie", "fr": "Film" } },
+            { "value": "tv", "label": { "en": "Television", "fr": "Télévision" } },
+            { "value": "door-open", "label": { "en": "Door", "fr": "Porte" } },
+            { "value": "home", "label": { "en": "House", "fr": "Maison" } },
+            { "value": "moon", "label": { "en": "Moon / night", "fr": "Lune / nuit" } },
+            { "value": "sun", "label": { "en": "Sun / day", "fr": "Soleil / jour" } },
+            { "value": "bell", "label": { "en": "Alarm / bell", "fr": "Alarme / sonnette" } },
+            { "value": "star", "label": { "en": "Star", "fr": "Étoile" } },
+            { "value": "droplet", "label": { "en": "Water", "fr": "Eau" } },
+            { "value": "coffee", "label": { "en": "Coffee", "fr": "Café" } },
+            { "value": "zap", "label": { "en": "Lightning", "fr": "Éclair" } },
+            { "value": "timer", "label": { "en": "Timer", "fr": "Minuteur" } }
+          ]
+        },
+        {
+          "key": "style",
+          "type": "select",
+          "label": {
+            "en": "Colour in the widget",
+            "fr": "Couleur dans le widget"
+          },
+          "required": false,
+          "default": "primary",
+          "options": [
+            { "value": "primary", "label": { "en": "Main (blue)", "fr": "Principal (bleu)" } },
+            {
+              "value": "secondary",
+              "label": { "en": "Secondary (grey)", "fr": "Secondaire (gris)" }
+            },
+            { "value": "danger", "label": { "en": "Danger (red)", "fr": "Danger (rouge)" } }
+          ]
+        },
+        {
+          "key": "confirm",
+          "type": "select",
+          "label": {
+            "en": "Ask for confirmation before pressing (widget)",
+            "fr": "Demander une confirmation avant l'appui (widget)"
+          },
+          "required": false,
+          "default": "no",
+          "options": [
+            { "value": "no", "label": { "en": "No", "fr": "Non" } },
+            { "value": "yes", "label": { "en": "Yes", "fr": "Oui" } }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "edit_button",
+      "label": {
+        "en": "Change a button",
+        "fr": "Modifier un bouton"
+      },
+      "description": {
+        "en": "Only the fields you fill in change. The type cannot change.",
+        "fr": "Seuls les champs remplis changent. Le type ne change pas."
+      },
+      "timeout_seconds": 15,
+      "fields": [
+        {
+          "key": "button",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ],
-      "outputs": [
+          "label": {
+            "en": "Button",
+            "fr": "Bouton"
+          },
+          "required": false
+        },
         {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "key": "current_name",
+          "type": "string",
+          "label": {
+            "en": "Or its current name (button not created yet)",
+            "fr": "Ou son nom actuel (bouton pas encore créé)"
+          },
+          "required": false
+        },
+        {
+          "key": "name",
+          "type": "string",
+          "label": {
+            "en": "New name in the widget",
+            "fr": "Nouveau nom dans le widget"
+          },
+          "required": false
+        },
+        {
+          "key": "minutes",
+          "type": "number",
+          "label": {
+            "en": "New duration in minutes (timed switch)",
+            "fr": "Nouvelle durée en minutes (interrupteur temporisé)"
+          },
+          "required": false,
+          "min": 1,
+          "max": 1440
+        },
+        {
+          "key": "icon",
+          "type": "select",
+          "label": {
+            "en": "New icon",
+            "fr": "Nouvelle icône"
+          },
+          "required": false,
+          "options": [
+            { "value": "power", "label": { "en": "On / off", "fr": "Marche / arrêt" } },
+            { "value": "flame", "label": { "en": "Flame / heating", "fr": "Flamme / chauffage" } },
+            { "value": "thermometer", "label": { "en": "Thermometer", "fr": "Thermomètre" } },
+            { "value": "lightbulb", "label": { "en": "Light bulb", "fr": "Ampoule" } },
+            { "value": "blinds", "label": { "en": "Shutter", "fr": "Volet" } },
+            { "value": "plug", "label": { "en": "Plug", "fr": "Prise" } },
+            { "value": "fan", "label": { "en": "Fan", "fr": "Ventilateur" } },
+            { "value": "music", "label": { "en": "Music", "fr": "Musique" } },
+            { "value": "film", "label": { "en": "Movie", "fr": "Film" } },
+            { "value": "tv", "label": { "en": "Television", "fr": "Télévision" } },
+            { "value": "door-open", "label": { "en": "Door", "fr": "Porte" } },
+            { "value": "home", "label": { "en": "House", "fr": "Maison" } },
+            { "value": "moon", "label": { "en": "Moon / night", "fr": "Lune / nuit" } },
+            { "value": "sun", "label": { "en": "Sun / day", "fr": "Soleil / jour" } },
+            { "value": "bell", "label": { "en": "Alarm / bell", "fr": "Alarme / sonnette" } },
+            { "value": "star", "label": { "en": "Star", "fr": "Étoile" } },
+            { "value": "droplet", "label": { "en": "Water", "fr": "Eau" } },
+            { "value": "coffee", "label": { "en": "Coffee", "fr": "Café" } },
+            { "value": "zap", "label": { "en": "Lightning", "fr": "Éclair" } },
+            { "value": "timer", "label": { "en": "Timer", "fr": "Minuteur" } }
+          ]
+        },
+        {
+          "key": "style",
+          "type": "select",
+          "label": {
+            "en": "New colour in the widget",
+            "fr": "Nouvelle couleur dans le widget"
+          },
+          "required": false,
+          "options": [
+            { "value": "primary", "label": { "en": "Main (blue)", "fr": "Principal (bleu)" } },
+            {
+              "value": "secondary",
+              "label": { "en": "Secondary (grey)", "fr": "Secondaire (gris)" }
+            },
+            { "value": "danger", "label": { "en": "Danger (red)", "fr": "Danger (rouge)" } }
+          ]
+        },
+        {
+          "key": "confirm",
+          "type": "select",
+          "label": {
+            "en": "Confirmation before pressing (widget)",
+            "fr": "Confirmation avant l'appui (widget)"
+          },
+          "required": false,
+          "options": [
+            { "value": "no", "label": { "en": "No", "fr": "Non" } },
+            { "value": "yes", "label": { "en": "Yes", "fr": "Oui" } }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "remove_button",
+      "label": {
+        "en": "Remove a button",
+        "fr": "Supprimer un bouton"
+      },
+      "description": {
+        "en": "Then delete its device in the Devices tab if you had created it.",
+        "fr": "Supprimez ensuite son appareil dans l'onglet Appareils si vous l'aviez créé."
+      },
+      "timeout_seconds": 15,
+      "fields": [
+        {
+          "key": "button",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Button",
+            "fr": "Bouton"
+          },
+          "required": false
+        },
+        {
+          "key": "current_name",
+          "type": "string",
+          "label": {
+            "en": "Or its name (button not created yet)",
+            "fr": "Ou son nom (bouton pas encore créé)"
+          },
+          "required": false
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "buttons",
+      "label": {
+        "en": "Buttons",
+        "fr": "Boutons"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Up to 4 of your virtual buttons, with their icon and colour.",
+        "fr": "Jusqu'à 4 de vos boutons virtuels, avec leur icône et leur couleur."
+      },
+      "icon": "toggle-right",
+      "action_timeout_seconds": 10,
+      "settings": [
+        {
+          "key": "button_1",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Button 1",
+            "fr": "Bouton 1"
+          },
+          "required": true
+        },
+        {
+          "key": "button_2",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Button 2",
+            "fr": "Bouton 2"
+          },
+          "required": false
+        },
+        {
+          "key": "button_3",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Button 3",
+            "fr": "Bouton 3"
+          },
+          "required": false
+        },
+        {
+          "key": "button_4",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Button 4",
+            "fr": "Bouton 4"
+          },
+          "required": false
+        }
+      ]
     }
   ]
 }

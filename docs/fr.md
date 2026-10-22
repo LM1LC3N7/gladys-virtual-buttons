@@ -1,67 +1,158 @@
-# Template de démonstration
+# Boutons virtuels
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+Créez vos propres boutons dans Gladys, avec un nom, une icône et une couleur,
+puis lancez une scène quand vous appuyez dessus. Pas besoin de bricoler un faux
+appareil MQTT.
 
-## Ce que vous obtenez
+> Intégration non officielle. **Testé seulement avec un faux Gladys** (les
+> tests automatiques du projet), jamais encore sur une vraie installation.
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+## Les trois types de bouton
 
-## Configuration
+| Type                       | Ce qu'il fait                                                                                                                   | Exemple                  |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| **Bouton poussoir**        | Un appui = une impulsion : il passe à 1, puis revient seul à 0 une seconde plus tard.                                           | « Lancer la scène Ciné » |
+| **Interrupteur**           | Marche / arrêt, mémorisé (même après un redémarrage).                                                                           | « Mode nuit »            |
+| **Interrupteur temporisé** | Marche, puis revient seul à l'arrêt après la durée choisie (1 à 1440 minutes). Un nouvel appui sur « marche » relance la durée. | « Chauffage 30 min »     |
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+Un bouton **ne commande rien tout seul** : c'est une scène qui agit quand il
+change. Le bouton est la télécommande, la scène fait le travail.
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+## Étape 1 : créer le bouton
 
-## Actions
+1. Dans Gladys, ouvrez **Intégrations**, puis **Boutons virtuels**, onglet
+   **Configuration**.
+2. Cliquez sur **Ajouter un bouton**. Un petit formulaire s'ouvre :
+   - **Nom** : par exemple `Chauffage` (40 caractères au plus ; le widget en
+     affiche 24) ;
+   - **Type de bouton** : cochez l'une des trois lignes, chacune expliquée en
+     une phrase. Le type ne peut plus être changé ensuite ;
+   - **Durée en minutes** : seulement pour l'interrupteur temporisé ;
+   - **Icône** : flamme / chauffage, ampoule, volet, prise, ventilateur,
+     musique, film, porte, maison, lune, soleil, alarme, étoile… ;
+   - **Couleur dans le widget** : principal (bleu), secondaire (gris) ou
+     danger (rouge) ;
+   - **Demander une confirmation avant l'appui** : oui ou non.
+3. Validez. Le message sous le bouton dit « Bouton « Chauffage » ajouté ».
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+## Étape 2 : l'ajouter dans Gladys (onglet Découverte)
 
-## Scènes
+Gladys ne laisse pas une intégration créer un appareil toute seule : c'est vous
+qui le validez.
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+1. Ouvrez l'onglet **Découverte** de l'intégration. Votre bouton y apparaît,
+   avec son nom.
+2. Cliquez sur **Créer** à côté de lui. Vous pouvez choisir sa pièce.
+3. Il apparaît maintenant dans l'onglet **Appareils**. Un bouton poussoir est un
+   appareil « bouton », un interrupteur un appareil « interrupteur ».
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+## Étape 3 : la scène qui agit
 
-## Tableau de bord
+Exemple : « quand j'appuie sur Chauffage, allumer la prise du radiateur ».
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+1. Ouvrez **Scènes**, cliquez sur **Nouvelle scène**, donnez-lui un nom et
+   une icône (par exemple la flamme).
+2. **Déclencheur** : choisissez **Changement d'état d'un appareil**. Dans la
+   liste des appareils, prenez votre bouton (« Chauffage »). Réglez la
+   condition sur **égal à** et la valeur sur **1**. Laissez « Seulement au
+   franchissement du seuil » décoché : la scène part ainsi à chaque appui.
+3. **Action** : par exemple **Contrôler un appareil**, choisissez la prise du
+   radiateur et « Allumer ».
+4. Pour un interrupteur, faites une deuxième scène « quand Chauffage passe à
+   **0** » qui éteint la prise. Pour un interrupteur temporisé, cette scène
+   « passe à 0 » part aussi quand la durée se termine.
+5. Enregistrez et activez la scène.
 
-## Dépannage
+Ne faites jamais une scène qui renvoie une valeur **au bouton qui l'a
+déclenchée** : elle se relancerait sans fin. L'intégration refuse un bouton
+actionné plus de 20 fois en une minute, mais mieux vaut ne pas tenter.
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+## Étape 4 : le widget « Boutons » sur le tableau de bord
+
+1. Ouvrez votre **tableau de bord**, passez en mode édition, ajoutez une boîte
+   et choisissez le widget **Boutons** (de l'intégration Boutons virtuels).
+2. Dans ses réglages, choisissez de **1 à 4 boutons** (Bouton 1 à Bouton 4).
+   Seuls les boutons déjà créés à l'étape 2 sont proposés.
+3. Le widget affiche une pastille par bouton, avec l'icône, le nom et la
+   couleur choisis :
+   - un appui sur un **bouton poussoir** envoie une impulsion ;
+   - un appui sur un **interrupteur** le fait basculer. Allumé, il prend sa
+     couleur (bleu si vous aviez choisi gris) ; éteint, il est gris ;
+   - pour un **interrupteur temporisé** allumé, une ligne indique le temps
+     restant (« Chauffage : encore 25 min ») ;
+   - si vous avez demandé une **confirmation**, Gladys demande de confirmer
+     avant d'envoyer.
+4. Pour plus de 4 boutons, ajoutez plusieurs widgets.
+
+Les boutons fonctionnent aussi dans les boîtes habituelles de Gladys : la boîte
+« Appareils » d'une pièce, et pour les interrupteurs la boîte « Actions
+rapides ». Là, l'icône est celle de Gladys (un rond pour un bouton, un
+interrupteur pour un interrupteur) : l'icône choisie ne s'affiche que dans le
+widget « Boutons ».
+
+## Modifier ou supprimer un bouton
+
+- **Modifier un bouton** : choisissez le bouton dans la liste (ou tapez son nom
+  s'il n'est pas encore créé), puis remplissez seulement ce qui change :
+  nouveau nom dans le widget, icône, couleur, confirmation, durée. Le type ne
+  change pas. Une nouvelle durée vaut au prochain « marche ». Un nouveau nom ne
+  renomme pas l'appareil Gladys : renommez-le aussi dans l'onglet Appareils si
+  vous le souhaitez.
+- **Supprimer un bouton** : choisissez-le de la même façon. Supprimez ensuite
+  son appareil dans l'onglet **Appareils** si vous l'aviez créé. Si vous
+  supprimez seulement l'appareil dans Gladys, le bouton reste proposé dans
+  Découverte.
+
+## Sécurité : à lire avant de commander quelque chose d'important
+
+- **Un interrupteur virtuel peut être coupé (ou allumé) par d'autres que
+  vous** : une commande « tout éteindre », la voix ou le chat (« éteins
+  Chauffage »), un assistant connecté, n'importe quelle scène, n'importe quel
+  tableau de bord (même un écran mural). Pour une **commande sensible**
+  (portail, alarme, chaudière, porte de garage), n'utilisez **jamais un
+  interrupteur** : prenez un **bouton poussoir avec confirmation**, et mettez
+  les conditions dans la scène (personne à la maison, heure, état de
+  l'alarme…).
+- **L'état du bouton n'est pas l'état réel de l'appareil commandé.**
+  « Chauffage : marche » veut dire que vous avez appuyé, pas que la chaudière
+  chauffe. Si la scène échoue ou si l'appareil ne répond pas, le bouton ne le
+  sait pas. Pour voir l'état réel, ajoutez un vrai capteur (prise avec mesure
+  de puissance, thermomètre) sur votre tableau de bord.
+- Les boutons ne sont **jamais** déclarés comme des lumières, pour qu'un
+  « éteins les lumières » ne les atteigne pas.
+- Si le conteneur de l'intégration est arrêté, un appui échoue (Gladys
+  l'affiche). Un interrupteur temporisé dont la durée est passée pendant
+  l'arrêt revient à l'arrêt dès le redémarrage.
+
+## L'alternative sans intégration : une scène dans « Actions rapides »
+
+Si vous voulez seulement **un bouton qui lance une scène**, Gladys sait déjà le
+faire, sans cette intégration et sans conteneur :
+
+1. Créez la scène (par exemple « Chauffage 30 min ») et choisissez son icône
+   dans le sélecteur d'icônes de la scène (la flamme, par exemple).
+2. Sur le tableau de bord, ajoutez la boîte **Actions rapides** (ou la boîte
+   **Scène**), puis ajoutez-y la scène avec le libellé de votre choix.
+3. Un appui lance la scène, avec son icône.
+
+Cette intégration sert surtout quand il vous faut un **état** : un
+interrupteur marche/arrêt mémorisé, ou un interrupteur qui revient seul à
+l'arrêt après une durée.
+
+## Limites
+
+- 100 boutons au plus, 4 par widget (ajoutez plusieurs widgets).
+- Pas d'appui long ni de double appui, pas de couleur libre ni de taille de
+  bouton : seulement les trois couleurs du widget.
+- L'intégration ne lance pas les scènes elle-même : c'est le changement d'état
+  du bouton qui les déclenche (étape 3).
+- Le widget se met à jour à chaque appui, et sinon toutes les 15 à 30
+  secondes.
+- Testé seulement avec un faux Gladys : merci de signaler ce qui ne marche pas
+  sur le dépôt GitHub.
+
+## Données
+
+La liste des boutons, leur état et la fin d'un interrupteur temporisé sont
+gardés dans `/data/virtual-buttons.json`, le volume de l'intégration. Rien n'est
+envoyé hors de votre Gladys.

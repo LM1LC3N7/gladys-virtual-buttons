@@ -12,44 +12,22 @@ the notes of the version's GitHub Release.
 
 ### Added
 
-- A working example of scene triggers, scene actions and dashboard widgets
-  (Gladys 5.1.0 or later).
-- `CHANGELOG.md`, rolled by the Release workflow.
-- A GitHub Release for every version, with its changelog section as notes: the
-  Gladys Supervision page links each version to the repository's releases.
-- CI runs the tests on Node 22 and 24, and builds the Docker image.
-- Dependabot keeps the npm dependencies and the GitHub Actions up to date.
-- `SECURITY.md` (how to report a vulnerability) and `CLAUDE.md` (project rules
-  for contributors and coding assistants).
-- Manifest tests: `version` matches `package.json`, `docker_image` is tagged
-  with it, descriptions hold 10 to 100 characters, placeholders are
-  multi-language objects.
-- The latitude and longitude fields show an example value as placeholder.
+- Virtual buttons created from the Configuration screen ("Add a button"): a
+  name, a type (push button, switch, timed switch of 1 to 1440 minutes), an
+  icon from a short list, a colour and a confirmation before pressing. Up to
+  100 buttons. "Change a button" and "Remove a button" too.
+- The buttons are proposed in the Discovery tab: a push button is a
+  `button`/`push` device (1 then 0 one second later), a switch or a timed
+  switch a `switch`/`binary` device. Never a light. Their look travels in the
+  device params, so a lost `/data` is rebuilt from the devices Gladys kept.
+- A timed switch goes back to off by itself; its end is kept in `/data`, and
+  an end passed while the container was stopped turns it off at the start.
+- The "Buttons" dashboard widget (Gladys 5.1.0 or later): up to 4 buttons per
+  card, with their icon, name, colour and confirmation; a switch that is on is
+  shown in its colour, off in grey; the time left of a timed switch.
+- Guards: a button pressed more than 20 times in a minute (a scene that
+  triggers itself) is refused for the rest of the minute; at most 240 states
+  a minute in all; names cleaned and bounded.
+- Step-by-step guides in English and French.
 
-### Changed
-
-- Node.js 22 or later is required (Node 20 is end-of-life).
-- Integration SDK 0.15.0. The tests now run against the fake Gladys of the
-  SDK, which refuses the payloads Gladys refuses.
-- The refresh interval is one minute minimum, the fastest Gladys polls a
-  device. The plug's power is only sent when it changes, and every 30
-  minutes otherwise.
-
-### Fixed
-
-- Gladys refused the devices of the Discovery tab: the weather station and
-  the plug declared their poll frequency in seconds instead of one of the
-  values Gladys accepts, and were never polled. They now poll every minute,
-  and the readings follow the refresh interval of the configuration.
-
-- The release commit no longer fails `npm run format:check`: the Release
-  workflow updates the manifest `version` and `docker_image` in place instead
-  of re-printing the whole file with `jq`.
-- The integration can write to `/data`: the image creates the directory owned
-  by the `node` user, a new Docker volume was owned by root.
-- A sub-container running the integration's own image follows it to the new
-  tag at each release, as well as in the manifest of the build summary: it kept
-  the previous tag, which may not exist on the registry. Sub-containers on a
-  third-party image (a broker, a database...) keep theirs.
-
-[Unreleased]: https://github.com/GladysAssistant/integration-template-js/commits/main
+[Unreleased]: https://github.com/LM1LC3N7/gladys-virtual-buttons/commits/main
