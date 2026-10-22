@@ -29,8 +29,8 @@ up to date at the end of every milestone.
   - the radio display and the default values of the "Add a button" and
     "Change a button" forms ("Unchanged", duration 0);
   - that a scene "Simple click" starts at every press of a push button (1
-    then 0), and a switch scene "On" with the threshold box ticked only on a
-    change;
+    then 0), and a switch scene "On" with only the threshold toggle on starts
+    only on a change;
   - the `source: "devices"` lists of the actions and widget settings (the
     created buttons only);
   - that republishing a created device updates its params without the
@@ -139,6 +139,25 @@ up to date at the end of every milestone.
   `connected`.
 - Words of the Gladys screens quoted exactly in the guides and messages
   (review 1, I1): « Ajouter à Gladys », « Changement d'état de l'appareil »,
-  « Clic simple » for a push button, « On » / « Off » and the threshold box
-  for a switch, the switch category shown « Prise » (en "Switch"); tested in
-  `test/manifest.test.js`.
+  « Clic simple » for a push button, « On » / « Off » and the three toggles
+  of a switch trigger (only the threshold one on), the Discovery card
+  (« Fonctionnalités », « Paramètres techniques », green « Ajouter à Gladys »
+  at the bottom), the tags « Bouton poussoir » / « Commutateur » (en "Push
+  button" / "Switch (On/Off)"; the short category name "Prise" is never shown
+  for an external integration), the action « Contrôler un appareil » (en "Set
+  device value") with a toggle; tested in `test/manifest.test.js` (approval
+  1, R2).
+- Remove (approval 1, R1): a switch whose 0 Gladys may not hold (on, a 0
+  refused or in flight, a value never sent) gets its 0 sent again and taken
+  before the button goes; otherwise nothing is removed.
+- `sent` is cleared at each `connected` (approval 1, M-c): the values just
+  read from Gladys are the reference (a restored backup); what this process
+  sends afterwards is newer.
+- Known limits (approval 1, minor): one publication chain, so a request that
+  hangs (up to the 15 s of the SDK) delays the next publications (an "on"
+  acknowledged at once may reach Gladys later; never a command applied after
+  a failure shown); the widget relays the params of the content the core has
+  in cache, so right after an invalidation a tap may carry the value of the
+  fresher content (a window of a few hundred ms); the "Button" list of
+  Change/Remove cannot be emptied again (reload the page); a new name exactly
+  "keep" is taken as "unchanged".

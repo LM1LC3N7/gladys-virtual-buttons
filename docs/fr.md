@@ -42,16 +42,17 @@ Gladys ne laisse pas une intégration créer un appareil toute seule : c'est vou
 qui le validez.
 
 1. Ouvrez l'onglet **Découverte** de l'intégration.
-   Ce que vous voyez : une ligne par bouton, avec son nom, et à droite un
-   bouton bleu **« Ajouter à Gladys »**.
-2. Cliquez sur **« Ajouter à Gladys »**. La ligne affiche ensuite le badge
-   « Déjà ajouté ».
-3. Le bouton apparaît dans l'onglet **Appareils**. Gladys affiche la catégorie
-   de sa fonction :
-   - « Bouton » pour un bouton poussoir ;
-   - « Prise » pour un interrupteur ou un interrupteur temporisé. Ce n'est pas
-     une vraie prise : c'est le nom que Gladys donne à tous les interrupteurs
-     marche/arrêt.
+   Ce que vous voyez : une **carte** par bouton. En haut, le nom du bouton en
+   titre ; dessous, **« Fonctionnalités »** avec une étiquette
+   (**« Bouton poussoir »** pour un poussoir, **« Commutateur »** pour un
+   interrupteur ou un interrupteur temporisé) ; puis un lien repliable
+   **« Paramètres techniques »** : c'est l'apparence du bouton (icône,
+   couleur…), n'y touchez pas ; tout en bas, un bouton vert
+   **« Ajouter à Gladys »**.
+2. Cliquez sur le bouton vert **« Ajouter à Gladys »**. L'en-tête de la carte
+   affiche ensuite le badge **« Déjà ajouté »**.
+3. Le bouton apparaît dans l'onglet **Appareils**, avec la même étiquette
+   « Bouton poussoir » ou « Commutateur ».
 
 ## Étape 3 : la scène qui agit
 
@@ -62,28 +63,39 @@ liste des appareils. La suite dépend du type.
 
 ### Pour un bouton poussoir
 
-Ce que vous voyez sous l'appareil choisi : une liste d'événements de bouton.
+Ce que vous voyez sous l'appareil choisi : une liste d'événements de bouton,
+et une bascule **« Exécuter la scène après que la condition ait été valide
+pendant : »**.
 
-1. Choisissez **« Clic simple »**. Il n'y a ni valeur à taper ni case à
-   cocher : la scène part à chaque appui.
-2. **Action** : par exemple **Contrôler un appareil**, choisissez la prise du
-   radiateur et « Allumer ».
-3. Enregistrez et activez la scène.
+1. Choisissez **« Clic simple »**. Il n'y a pas de valeur à taper : la scène
+   part à chaque appui.
+2. Laissez la bascule « Exécuter la scène après que la condition ait été
+   valide pendant : » **désactivée**.
+3. **Action** : par exemple **« Contrôler un appareil »**, choisissez la prise
+   du radiateur et **activez sa bascule** (activée = allumer).
+4. Enregistrez et activez la scène.
 
 ### Pour un interrupteur ou un interrupteur temporisé
 
 Ce que vous voyez sous l'appareil choisi : deux boutons **« On »** et
-**« Off »**, et une case à cocher.
+**« Off »**, puis **trois bascules**, dans cet ordre :
+
+- **« Démarrer la scène à chaque changement d'état, quelle que soit la valeur »** :
+  laissez-la **désactivée** (activée, elle fait disparaître « On » et « Off ») ;
+- **« Exécuter seulement lorsque le seuil est passé ( et non pas à chaque valeur envoyée ) »** :
+  **activez-la** ;
+- **« Exécuter la scène après que la condition ait été valide pendant : »** :
+  laissez-la **désactivée**.
 
 1. Cliquez sur **« On »**.
-2. **Cochez** la case :
-   **« Exécuter seulement lorsque le seuil est passé ( et non pas à chaque valeur envoyée ) »**.
+2. Réglez les trois bascules comme ci-dessus : seule la deuxième est activée.
    Ainsi la scène part seulement quand l'interrupteur passe d'arrêt à marche,
    jamais deux fois de suite (ni à un redémarrage).
-3. **Action** : par exemple allumer la prise du radiateur.
-4. Faites une deuxième scène identique avec **« Off »** (case cochée aussi) qui
-   éteint la prise. Pour un interrupteur temporisé, cette scène « Off » part
-   aussi quand la durée se termine.
+3. **Action** : par exemple **« Contrôler un appareil »**, choisissez la prise
+   du radiateur et **activez sa bascule**.
+4. Faites une deuxième scène identique avec **« Off »** (mêmes bascules) dont
+   l'action **désactive** la bascule de la prise. Pour un interrupteur
+   temporisé, cette scène « Off » part aussi quand la durée se termine.
 
 ### Les boucles
 

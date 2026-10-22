@@ -229,7 +229,14 @@ test('I1: the guides use the exact words of the Gladys screens', () => {
     "« Changement d'état de l'appareil »",
     '« Clic simple »',
     '« Exécuter seulement lorsque le seuil est passé ( et non pas à chaque valeur envoyée ) »',
-    '« Prise »',
+    "« Démarrer la scène à chaque changement d'état, quelle que soit la valeur »",
+    '« Exécuter la scène après que la condition ait été valide pendant : »',
+    '« Fonctionnalités »',
+    '« Paramètres techniques »',
+    '« Déjà ajouté »',
+    '« Bouton poussoir »',
+    '« Commutateur »',
+    '« Contrôler un appareil »',
     '« Actions rapides »',
     '« Appuyer »',
   ]) {
@@ -240,15 +247,24 @@ test('I1: the guides use the exact words of the Gladys screens', () => {
     '"Device state change"',
     '"Simple click"',
     '"Execute only when threshold is passed (and not at every value sent by the device)"',
-    '"Switch"',
+    '"Start the scene on any state change, whatever the value"',
+    '"Run the scene after the condition has been valid for:"',
+    '"Features"',
+    '"Technical parameters"',
+    '"Already added"',
+    '"Push button"',
+    '"Switch (On/Off)"',
+    '"Set device value"',
     '"Quick actions"',
     '"Push"',
   ]) {
     assert.ok(en.includes(words), `en: ${words}`);
   }
   for (const text of [fr, en, JSON.stringify(manifest)]) {
-    assert.doesNotMatch(text, /« Créer »|"Create"/);
+    assert.doesNotMatch(text, /« Créer »|"Create"|Control a device|« Allumer »|"Turn on"/);
   }
+  // The short category name "Prise" is never shown for an external integration.
+  assert.doesNotMatch(fr, /« Prise »|vraie prise/);
 });
 
 test('the image ships the licence', () => {

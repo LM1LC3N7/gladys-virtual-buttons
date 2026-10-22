@@ -39,13 +39,16 @@ open the Discovery tab…`.
 Gladys does not let an integration create a device on its own: you approve it.
 
 1. Open the **Discovery** tab of the integration.
-   What you see: one line per button, with its name, and on the right a blue
+   What you see: one **card** per button. At the top, the name of the button
+   as the title; below, **"Features"** with a tag (**"Push button"** for a
+   push button, **"Switch (On/Off)"** for a switch or a timed switch); then a
+   folding link **"Technical parameters"**: that is the look of the button
+   (icon, colour…), do not change it; at the very bottom, a green
    **"Add to Gladys"** button.
-2. Click **"Add to Gladys"**. The line then shows the badge "Already added".
-3. The button appears in the **Devices** tab. Gladys shows the category of its
-   feature:
-   - "Button" for a push button;
-   - "Switch" for a switch or a timed switch.
+2. Click the green **"Add to Gladys"** button. The header of the card then
+   shows the badge **"Already added"**.
+3. The button appears in the **Devices** tab, with the same tag "Push button"
+   or "Switch (On/Off)".
 
 ## Step 3: the scene that acts
 
@@ -55,28 +58,38 @@ button in the device list. What comes next depends on the type.
 
 ### For a push button
 
-What you see under the chosen device: a list of button events.
+What you see under the chosen device: a list of button events, and a toggle
+**"Run the scene after the condition has been valid for:"**.
 
-1. Choose **"Simple click"**. There is no value to type and no box to tick:
-   the scene starts at every press.
-2. **Action**: for example **Control a device**, choose the plug of the heater
-   and "Turn on".
-3. Save and enable the scene.
+1. Choose **"Simple click"**. There is no value to type: the scene starts at
+   every press.
+2. Leave the toggle "Run the scene after the condition has been valid for:"
+   **off**.
+3. **Action**: for example **"Set device value"**, choose the plug of the
+   heater and **switch its toggle on** (on = turn on).
+4. Save and enable the scene.
 
 ### For a switch or a timed switch
 
-What you see under the chosen device: two buttons **"On"** and **"Off"**, and
-a box to tick.
+What you see under the chosen device: two buttons **"On"** and **"Off"**, then
+**three toggles**, in this order:
+
+- **"Start the scene on any state change, whatever the value"**: leave it
+  **off** (on, it hides "On" and "Off");
+- **"Execute only when threshold is passed (and not at every value sent by the device)"**:
+  switch it **on**;
+- **"Run the scene after the condition has been valid for:"**: leave it
+  **off**.
 
 1. Click **"On"**.
-2. **Tick** the box:
-   **"Execute only when threshold is passed (and not at every value sent by the device)"**.
-   The scene then starts only when the switch goes from off to on, never twice
-   in a row (nor at a restart).
-3. **Action**: for example turn on the plug of the heater.
-4. Make a second, identical scene with **"Off"** (box ticked too) that turns
-   the plug off. For a timed switch, this "Off" scene also starts when the
-   duration ends.
+2. Set the three toggles as above: only the second one is on. The scene then
+   starts only when the switch goes from off to on, never twice in a row (nor
+   at a restart).
+3. **Action**: for example **"Set device value"**, choose the plug of the
+   heater and **switch its toggle on**.
+4. Make a second, identical scene with **"Off"** (same toggles) whose action
+   switches the toggle of the plug **off**. For a timed switch, this "Off"
+   scene also starts when the duration ends.
 
 ### Loops
 

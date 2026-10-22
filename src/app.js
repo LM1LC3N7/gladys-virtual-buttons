@@ -164,6 +164,10 @@ export class ButtonsApp {
    * and only the states Gladys does not hold already.
    */
   async connected() {
+    // The SDK has just read the devices again: their last_value is now the
+    // reference (a Gladys restored from a backup holds other values). What
+    // this process sends from here on (an end passed while stopped) is newer.
+    this.sent.clear();
     await this.init();
     await this.run(() => this.recover());
     await this.publishDiscovery();
@@ -811,9 +815,21 @@ export class ButtonsApp {
     }
     // A switch that is on is turned off first, and Gladys must take the 0:
     // its "Off" scenes run, and Gladys never keeps "on" forever.
+    // Also a switch already off here whose 0 Gladys may not hold yet (a
+    // refused 0 waiting for the sweep, one in flight, a value never sent):
+    // the 0 is sent again and must be taken before the button goes.
     const wasOn = isSwitchKind(button.kind) && button.state === 1;
-    if (wasOn) {
-      const { sent } = await this.setSwitch(button, 0, this.mono());
+    const mayHoldOn =
+      isSwitchKind(button.kind) &&
+      this.createdIds().has(button.id) &&
+      (wasOn ||
+        this.unpublished.has(button.id) ||
+        this.inflight.has(button.id) ||
+        this.differsFromGladys(button));
+    if (mayHoldOn) {
+      const sent = wasOn
+        ? (await this.setSwitch(button, 0, this.mono())).sent
+        : this.publish(button, 0);
       let timer;
       const outcome = sent
         ? await Promise.race([
@@ -860,7 +876,7 @@ export class ButtonsApp {
       return button.name;
     });
     this.afterChange();
-    return T.removed(name, wasOn);
+    return T.removed(name, wasOn && mayHoldOn);
   }
 
   // --- Device events -----------------------------------------------------------------

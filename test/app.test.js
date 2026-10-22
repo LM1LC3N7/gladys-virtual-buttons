@@ -533,6 +533,31 @@ test('S4: removing a switch that is on publishes 0 first; refused if Gladys does
   assert.equal(t.gladys.fake.lastState(feature.external_id), 0);
 });
 
+test('R1 (R2-S4c): a second "Remove" right after a refused 0 sends the 0 again and waits for it', async (ctx) => {
+  const t = await setup();
+  await t.add({ name: 'Radiateur', kind: 'switch' });
+  const device = await t.create('Radiateur');
+  const feature = device.features[0];
+  await t.gladys.fake.setValue(device, feature, 1);
+  ctx.mock.method(t.gladys, 'publishStates', async () => {
+    throw new Error('429');
+  });
+  const first = await t.gladys.fake.action(ACTIONS.REMOVE, { current_name: 'Radiateur' });
+  assert.equal(first.success, false);
+  // Retried at once (before the sweep), Gladys still refusing: nothing removed.
+  const second = await t.gladys.fake.action(ACTIONS.REMOVE, { current_name: 'Radiateur' });
+  assert.equal(second.success, false);
+  assert.match(second.error, /rien n'est supprimé/);
+  assert.equal(t.app.buttons.size, 1);
+  assert.equal(t.gladys.fake.lastState(feature.external_id), 1, 'Gladys still holds 1');
+  // Gladys takes states again: the next try sends the 0, then removes.
+  ctx.mock.restoreAll();
+  const third = await t.gladys.fake.action(ACTIONS.REMOVE, { current_name: 'Radiateur' });
+  assert.equal(third.success, true);
+  assert.equal(t.gladys.fake.lastState(feature.external_id), 0);
+  assert.equal(t.app.buttons.size, 0);
+});
+
 test('S6: Discovery publications are serialized, the last one has the current list', async (ctx) => {
   const t = await setup();
   const original = t.gladys.publishDiscoveredDevices.bind(t.gladys);
@@ -598,6 +623,8 @@ test('S1: every connection publishes Discovery and status, never a value Gladys 
   const count = t.states(feature.external_id).length;
   for (let i = 0; i < 2; i += 1) {
     await t.gladys.disconnect();
+    // What the SDK reads again at the connection: the values Gladys holds.
+    t.gladys.fake.devices = t.withLastValues(t.gladys.fake.devices);
     await t.gladys.connect();
     await t.clock.settle();
   }
