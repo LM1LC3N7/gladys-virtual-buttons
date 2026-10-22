@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-22
+
 ### Added
 
 - Virtual buttons created from the Configuration screen ("Add a button"): a
@@ -42,4 +44,5 @@ the notes of the version's GitHub Release.
 - Step-by-step guides in English and French, with the exact words of the
   Gladys screens.
 
-[Unreleased]: https://github.com/LM1LC3N7/gladys-virtual-buttons/commits/main
+[Unreleased]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/LM1LC3N7/gladys-virtual-buttons/releases/tag/v0.1.1

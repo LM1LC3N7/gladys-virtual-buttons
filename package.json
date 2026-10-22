@@ -1,6 +1,6 @@
 {
   "name": "gladys-virtual-buttons",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Gladys Assistant external integration for virtual buttons: push buttons, switches and timed switches created from the Configuration screen, with an icon, a colour and a confirmation, shown in a dashboard widget and used to start scenes.",
   "type": "module",
