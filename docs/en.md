@@ -6,13 +6,14 @@ start a scene when you press them. No need to fake an MQTT device.
 > Unofficial integration. **Tested with a fake Gladys only** (the automatic
 > tests of the project), never yet on a real installation.
 
-## The three types of button
+## The four types of button
 
 | Type             | What it does                                                                                                                | Example          |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------- |
 | **Push button**  | One press = one pulse: it goes to 1, then back to 0 by itself one second later.                                             | "Start movie"    |
 | **Switch**       | On / off, remembered (even after a restart).                                                                                | "Night mode"     |
 | **Timed switch** | On, then back to off by itself after the chosen duration (1 to 1440 minutes). Pressing "on" again starts the duration over. | "Heating 30 min" |
+| **Selector**     | 2 to 4 named positions, one at a time, remembered; each position can start its own scene.                                   | "Heating mode"   |
 
 A button **controls nothing by itself**: a scene acts when it changes. The
 button is the remote, the scene does the work.
@@ -24,11 +25,18 @@ button is the remote, the scene does the work.
 2. Click **Add a button**. A small form opens:
    - **Name**: for example `Heating` (up to 40 characters; the widget shows
      24);
-   - **Type of button**: tick one of the three lines, each explained in one
+   - **Type of button**: tick one of the four lines, each explained in one
      sentence. The type cannot be changed later;
    - **Duration in minutes**: for the timed switch only;
-   - **Icon**: flame / heating, light bulb, shutter, plug, fan, music, movie,
-     door, house, moon, sun, alarm, star…;
+   - **Positions**: for the selector only, 2 to 4 names separated by commas,
+     in order, 20 characters each at most; for example
+     `Comfort, Eco, Frost protection, Off`. At creation, the selector is on the
+     first one;
+   - **Icon**: a list of 50 icons, each with a plain name, grouped by theme:
+     on / off, switch, play, pause, stop, flame / heating, radiator, cold /
+     frost protection, light bulb, shutter, plug, music, house, door, bed /
+     bedtime, meal / kitchen, party… To **see them before choosing**, add the
+     **Icons** widget (see below);
    - **Colour in the widget**: main (blue), secondary (grey) or danger (red);
    - **Ask for confirmation before pressing (widget)**: yes or no.
 3. Confirm. Under the button, the message says: `Button "Heating" added. Now
@@ -41,14 +49,15 @@ Gladys does not let an integration create a device on its own: you approve it.
 1. Open the **Discovery** tab of the integration.
    What you see: one **card** per button. At the top, the name of the button
    as the title; below, **"Features"** with a tag (**"Push button"** for a
-   push button, **"Switch (On/Off)"** for a switch or a timed switch); then a
+   push button, **"Switch (On/Off)"** for a switch or a timed switch,
+   **"Selection"** for a selector); then a
    folding link **"Technical parameters"**: that is the look of the button
    (icon, colour…), do not change it; at the very bottom, a green
    **"Add to Gladys"** button.
 2. Click the green **"Add to Gladys"** button. The header of the card then
    shows the badge **"Already added"**.
-3. The button appears in the **Devices** tab, with the same tag "Push button"
-   or "Switch (On/Off)".
+3. The button appears in the **Devices** tab, with the same tag "Push button",
+   "Switch (On/Off)" or "Selection".
 
 ## Step 3: the scene that acts
 
@@ -91,16 +100,33 @@ What you see under the chosen device: two buttons **"On"** and **"Off"**, then
    switches the toggle of the plug **off**. For a timed switch, this "Off"
    scene also starts when the duration ends.
 
+### For a selector
+
+What you see under the chosen device: a list of operators, a list of the
+positions of your selector (by their names), then the same toggles as for a
+switch.
+
+1. Choose the operator **"equal"**, then the position in the list (for
+   example "Eco"). If a text field shows instead of the list, click
+   **"Choose from the list of values"**.
+2. Set the toggles as for a switch: only "Execute only when threshold is
+   passed" is on.
+3. **Action**: for example **"Set device value"** on your radiator or pilot
+   wire, with the mode you want.
+4. Make one scene per position (4 positions = 4 scenes). A position keeps its
+   number even when you rename it: your scenes keep working.
+
 ### Loops
 
 Do not make a scene that sends a command **back to the button that started
 it**. The integration protects itself:
 
-- a press or an "on" repeated more than **20 times in a minute** on the same
-  button is refused for the rest of the minute;
-- an "off" is **never** refused; an "off" of a switch already off (and an "on"
-  of a switch already on) is accepted without sending anything to Gladys, so
-  without starting a scene again.
+- a press, an "on" or a change of position repeated more than **20 times in a
+  minute** on the same button is refused for the rest of the minute;
+- the "off" of a switch is **never** refused; an "off" of a switch already off
+  (and an "on" of a switch already on, or the position a selector is already
+  on) is accepted without sending anything to Gladys, so without starting a
+  scene again.
 
 ## Step 4: the "Buttons" widget on the dashboard
 
@@ -118,17 +144,38 @@ it**. The integration protects itself:
      says "already off" or "already on");
    - for a **timed switch** that is on, a line shows the time left
      ("Heating: 25 min left");
+   - a **selector** takes one pill per position, and a line at the top gives
+     its name and its current position ("Heating — Eco"). The current
+     position stands out: its colour and a tick, the others grey. A press puts
+     the selector on the position of the pill (the message says "already on
+     Eco" when it was). A card holds 4 pills at most: a selector of 4
+     positions takes a card of its own. A selector that has no room left for
+     all its positions shows none (never half of them): its line stays, and a
+     message says to show it on another card;
    - if you asked for a **confirmation**, Gladys asks you to confirm before
      sending.
 4. For more than 4 buttons, add several widgets. Gladys accepts at most 30
    presses a minute on the widgets of the integration, all widgets together.
 
 The buttons also work in the usual Gladys boxes: the "Devices" box of a room
-(a **"Push"** button for a push button, a toggle for the others), and for the
-switches the **"Quick actions"** box. There, the icon is the Gladys one: the
+(a **"Push"** button for a push button, a toggle for the switches, a drop-down
+list of the positions for a selector), and for the switches the
+**"Quick actions"** box. There, the icon is the Gladys one: the
 icon you chose only shows in the "Buttons" widget. **The confirmation only
 exists in the widget**: the "Devices" box, a scene, the voice or an assistant
 press without asking.
+
+## See the icons before choosing: the "Icons" widget
+
+The forms can only show text: the "Icon" list gives each icon a name, not its
+drawing. To see the drawings:
+
+1. On a dashboard, in edit mode, add a box and choose the **Icons** widget (of
+   the Virtual buttons integration).
+2. In its **Page** setting, choose a page (1 to 5): each one shows 10 icons, in
+   the order of the "Icon" list of the forms, with the drawing, the name shown
+   in the form and the technical name.
+3. Once you have chosen, you can remove this widget.
 
 ## Change or remove a button
 
@@ -138,6 +185,11 @@ press without asking.
   Flame / heating; colour: unchanged…"). The type does not change. A new
   duration applies at the next "on". A new name does not rename the Gladys
   device: rename it in the Devices tab too if you wish.
+  For a **selector**, the field **New positions** replaces the list (empty:
+  unchanged). A position keeps its number: rename it in place, add or remove
+  at the end. The current position cannot be removed: put the selector on
+  another position first. Gladys gets the new names with the next Discovery
+  publication (right after).
   The form keeps its values after a run: **reload the page** before changing
   another button. If you apply exactly the same changes to another button
   right after, the integration asks you to run the action again to confirm.
@@ -165,9 +217,14 @@ press without asking.
   real state, add a real sensor (a plug that measures power, a thermometer) on
   your dashboard.
 - The buttons are **never** declared as lights, so a "turn off the lights" never
-  reaches them.
-- An "on" or a press that arrives too late (Gladys has already shown a failure,
-  after 5 seconds) is refused: nothing is sent. An "off" is always applied.
+  reaches them. A selector is neither a switch nor a Gladys heating mode (it
+  is a "Selection"): a "turn everything off" or a "set every radiator to eco"
+  does not change it. For heating modes, the scene acts, with its conditions;
+  the selector only says what you chose.
+- An "on", a press or a change of position that arrives too late (Gladys has
+  already shown a failure, after 5 seconds) is refused: nothing is sent. The
+  "off" of a switch is always applied. A selector has no "off": all its
+  positions are handled like an "on" (even a position named "Off").
 - If the container of the integration is stopped, a press fails (Gladys shows
   it). A timed switch whose duration ended while it was stopped goes back to
   off as soon as it starts again. A restart or a reconnection never sends
@@ -190,21 +247,35 @@ duration.
 
 ## Limits
 
-- 100 buttons at most, 4 per widget (add several widgets).
+- 100 buttons at most, 4 per widget (add several widgets); a selector has 4
+  positions at most, since each one is a pill of the widget and a card holds
+  4 at most.
 - No long press nor double press, no free colour nor button size: only the
   three colours of the widget.
+- **The shape of the buttons is the Gladys one**: a pill with an icon and a
+  name. An external integration draws nothing itself (no HTML nor CSS: Gladys
+  renders the widgets from a list of components fixed by the core). So there
+  is no **round on / off button**; the closest: a switch with the "On / off"
+  (or "Switch") icon, in the "Danger (red)" colour if you want it to stand
+  out. No **pull cord** nor **rotary knob** either: take a selector, which
+  does the same job with its pills.
+- **No icon of your own** (ICO, PNG, SVG file): in the widgets, Gladys only
+  shows the icons of its own set, by their name. If an icon is missing from
+  the list, ask for it on the GitHub repository: it can be added if Gladys
+  has it.
 - The integration does not start scenes itself: the state change of the button
   starts them (step 3).
 - The widget updates at every press, and otherwise every 15 to 30 seconds.
 - If the saved list is lost (a new volume), the buttons are rebuilt from the
-  Gladys devices: a switch takes back the value Gladys holds, a timed switch
-  comes back off (its "Off" scene runs).
+  Gladys devices: a switch and a selector take back the value Gladys holds, a
+  timed switch comes back off (its "Off" scene runs).
 - Tested with a fake Gladys only: please report what does not work on the
   GitHub repository.
 
 ## Data
 
-The list of the buttons, their state and the end of a timed switch are kept in
+The list of the buttons, their state, the positions of a selector and the end
+of a timed switch are kept in
 `/data/virtual-buttons.json`, the volume of the integration. Nothing leaves your
 Gladys. If this file cannot be read, the integration never overwrites it and
 says so in its status.

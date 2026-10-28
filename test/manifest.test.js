@@ -6,10 +6,14 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { createFakeGladys } from '@gladysassistant/integration-sdk/testing';
 import {
   ACTIONS,
   DEFAULTS,
+  CURRENT_ICON,
+  ICON_PAGES,
   ICONS,
   KEEP,
   KIND_LIST,
@@ -19,6 +23,18 @@ import {
   WIDGETS,
 } from '../src/constants.js';
 import { ICON_LABELS, STYLE_LABELS } from '../src/i18n.js';
+import { deviceOf, sanitizeButton } from '../src/buttons.js';
+
+// The core's own sources, when a Gladys clone is at hand (not on GitHub CI):
+// the rules below copy them, these are the proof.
+const CORE = '/home/claude/code/Gladys/server';
+const normalizeSupportedOptions = existsSync(`${CORE}/utils/normalizeSupportedOptions.js`)
+  ? createRequire(import.meta.url)(`${CORE}/utils/normalizeSupportedOptions.js`)
+      .normalizeSupportedOptions
+  : undefined;
+const coreIcons = existsSync(`${CORE}/config/icons.json`)
+  ? JSON.parse(readFileSync(`${CORE}/config/icons.json`, 'utf8'))
+  : undefined;
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const manifest = JSON.parse(read('gladys-assistant-integration.json'));
@@ -123,6 +139,10 @@ test('the actions are the ones the code handles, with the code lists', () => {
   assert.deepEqual(values(add.kind), [...KIND_LIST]);
   assert.equal(add.kind.default, DEFAULTS.kind);
   assert.deepEqual(values(add.icon), [...ICONS]);
+  assert.equal(add.positions.type, 'string');
+  assert.equal(add.positions.required, false);
+  assert.equal(fieldsOf(ACTIONS.EDIT).positions.type, 'string');
+  assert.equal(fieldsOf(ACTIONS.EDIT).positions.default, undefined);
   assert.equal(add.icon.default, DEFAULTS.icon);
   assert.deepEqual(values(add.style), [...STYLES]);
   assert.equal(add.style.default, DEFAULTS.style);
@@ -169,9 +189,28 @@ test('the actions are the ones the code handles, with the code lists', () => {
   assert.equal(manifest.scene_actions, undefined);
 });
 
-test('the widget: key, slots, handler', () => {
-  assert.equal(manifest.widgets.length, 1);
-  const [widget] = manifest.widgets;
+test('the widgets: keys, slots, handlers', () => {
+  assert.deepEqual(
+    manifest.widgets.map((w) => w.key),
+    [WIDGETS.BUTTONS, WIDGETS.ICONS],
+  );
+  const [widget, icons] = manifest.widgets;
+  assert.ok(handlers.includes('onWidgetGet(WIDGETS.ICONS'));
+  assert.deepEqual(
+    icons.settings.map((s) => [s.key, s.type, s.required, s.default]),
+    [['page', 'select', true, '1']],
+  );
+  assert.deepEqual(
+    values(icons.settings[0]),
+    Array.from({ length: ICON_PAGES }, (_, i) => String(i + 1)),
+  );
+  for (const w of manifest.widgets) {
+    for (const lang of ['en', 'fr']) {
+      assert.ok(w.label[lang].length >= 3 && w.label[lang].length <= 30);
+      assert.ok(w.description[lang].length <= 100);
+    }
+    assert.match(w.icon, /^[a-z0-9-]{1,40}$/);
+  }
   assert.equal(widget.key, WIDGETS.BUTTONS);
   assert.ok(handlers.includes('onWidgetGet(WIDGETS.BUTTONS'));
   assert.ok(handlers.includes('onWidgetAction(WIDGETS.BUTTONS'));
@@ -239,6 +278,9 @@ test('I1: the guides use the exact words of the Gladys screens', () => {
     '« Contrôler un appareil »',
     '« Actions rapides »',
     '« Appuyer »',
+    '« Sélection »',
+    '« égal »',
+    '« Choisir dans la liste des valeurs »',
   ]) {
     assert.ok(fr.includes(words), `fr: ${words}`);
   }
@@ -257,6 +299,9 @@ test('I1: the guides use the exact words of the Gladys screens', () => {
     '"Set device value"',
     '"Quick actions"',
     '"Push"',
+    '"Selection"',
+    '"equal"',
+    '"Choose from the list of values"',
   ]) {
     assert.ok(en.includes(words), `en: ${words}`);
   }
@@ -270,4 +315,78 @@ test('I1: the guides use the exact words of the Gladys screens', () => {
 test('the image ships the licence', () => {
   assert.match(read('Dockerfile'), /COPY LICENSE \.\//);
   assert.match(read('Dockerfile'), /COPY src \.\/src/);
+});
+
+test('the icons: the 20 of v0.1 still offered, all in the Gladys set, labels unique', () => {
+  // Saved buttons keep their icon: a value once offered is never withdrawn.
+  for (const old of [
+    'power',
+    'flame',
+    'thermometer',
+    'lightbulb',
+    'blinds',
+    'plug',
+    'fan',
+    'music',
+    'film',
+    'tv',
+    'door-open',
+    'home',
+    'moon',
+    'sun',
+    'bell',
+    'star',
+    'droplet',
+    'coffee',
+    'zap',
+    'timer',
+  ]) {
+    assert.ok(ICONS.includes(old), old);
+  }
+  assert.equal(new Set(ICONS).size, ICONS.length);
+  assert.deepEqual(Object.keys(ICON_LABELS).sort(), [...ICONS].sort());
+  for (const lang of ['en', 'fr']) {
+    const labels = ICONS.map((i) => ICON_LABELS[i][lang]);
+    assert.equal(new Set(labels).size, labels.length, `${lang}: two icons, one label`);
+    // A status line of the "Icons" widget: label at most 40 characters.
+    assert.ok(labels.every((l) => l.length <= 40));
+  }
+  for (const name of [...ICONS, CURRENT_ICON, ...manifest.widgets.map((w) => w.icon)]) {
+    assert.match(name, /^[a-z0-9-]{1,40}$/);
+    if (coreIcons) {
+      assert.ok(coreIcons.includes(name), `${name} is not in the Gladys icon set`);
+    }
+  }
+});
+
+test('the options of a selector follow the rules of the core', () => {
+  const gladys = createFakeGladys();
+  for (const positions of [
+    ['Confort', 'Éco', 'Hors-gel', 'Arrêt'],
+    ['  On  ', 'Off\t'],
+    ['a', 'A ', 'b'],
+  ]) {
+    const button = sanitizeButton({ id: 'b0123456789ab', name: 'S', kind: 'selector', positions });
+    if (!button) {
+      continue; // refused: two names alike
+    }
+    const [feature] = deviceOf(gladys, button).features;
+    // server/utils/normalizeSupportedOptions.js: a plain non-blank text
+    // label without surrounding spaces, a value (a non-blank string for a
+    // text/select), values unique in string form, no other key.
+    const options = feature.supported_options;
+    for (const option of options) {
+      assert.deepEqual(Object.keys(option).sort(), ['label', 'sort_order', 'value']);
+      assert.equal(typeof option.label, 'string');
+      assert.ok(option.label.length > 0);
+      assert.equal(option.label, option.label.trim());
+      assert.equal(typeof option.value, 'string');
+      assert.equal(option.value, option.value.trim());
+      assert.ok(Number.isInteger(option.sort_order));
+    }
+    assert.equal(new Set(options.map((o) => `${o.value}`)).size, options.length);
+    if (normalizeSupportedOptions) {
+      assert.deepEqual(normalizeSupportedOptions(options, { allowStringValues: true }), options);
+    }
+  }
 });

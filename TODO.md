@@ -40,6 +40,12 @@ up to date at the end of every milestone.
       find the "device state change" trigger too technical; per-button
       remaining time in the device box (not possible without the core); a
       core PR for an icon per action in "Quick actions".
+- [x] **Forum feedback (topic 11392, Prof_Techno), next patch**: selectors
+      (2 to 4 positions, `text`/`select`), 50 icons with plain names, the
+      "Icons" preview widget, docs on what an integration cannot draw. To
+      check on a real Gladys: the scene editor shows the position names
+      (`supported_options`) for "equal", the device box shows the drop-down,
+      the status list and the tick of the current pill render as expected.
 - [ ] **Milestone 3 — first release**: Docker image build check, Release
       workflow, topic, then the store validator once the image is published.
 
@@ -133,8 +139,32 @@ up to date at the end of every milestone.
 - No scene triggers nor scene actions in v1 (redundant with the state change
   trigger, loop risk; the core action "control a device" already sets a
   button).
-- Icons: 20 names from the Gladys icon set (`server/config/icons.json`),
-  labelled in English and French; default `power`.
+- Icons: 50 names from the Gladys icon set (`server/config/icons.json`,
+  checked by a test when the core clone is at hand), labelled in English and
+  French, grouped by theme; default `power`. The 20 of v0.1 stay offered
+  forever (saved buttons keep them). Custom icon files are impossible: widget
+  icons are Feather names the core renders as `fe fe-<name>`
+  (`normalizeWidgetContent.js` keeps the name only; SDK README, "Dashboard
+  widgets": "`icon` is a Feather icon name"). Select options carry no image,
+  so the preview is a second widget, "Icons" (a status list of 10 icons per
+  page, setting `page`).
+- Selector (forum feedback, topic 11392): kind `selector`, feature
+  `position` (`text`/`select`, values "1" … "4", names as
+  `supported_options` labels, params `VB_POSITIONS` JSON). 4 positions at
+  most because each one is a widget pill and a content holds 4 buttons (SDK
+  README, content budget). Not a heating mode category (a global "set every
+  radiator to eco" would reach it), not a switch. Every position is guarded
+  like an "on" (no "off" exemption: the module cannot know which one is
+  protective; the scene decides). Same position held by Gladys: nothing
+  published. "Change a button" renames in place, adds or removes at the end,
+  refuses to remove the current position (a command queued behind it is
+  checked again). Recovery: the param, else the options of the feature, the
+  position from `last_value_string`. In the widget, a selector gets all its
+  pills or none (never half), plus a status line; a pill tap carries its own
+  position (never "next").
+- Shapes: a round on/off button, a pull cord or a rotary knob cannot be drawn
+  by an external integration (no HTML/CSS; the core renders a fixed
+  vocabulary, a `button` is a pill). Answer: icon "power", colour, selector.
 - Status: "N buttons, M added to Gladys", republished with Discovery at each
   `connected`.
 - Words of the Gladys screens quoted exactly in the guides and messages

@@ -1,8 +1,8 @@
 # gladys-virtual-buttons
 
 [Gladys Assistant](https://gladysassistant.com) external integration for
-**virtual buttons**: push buttons, switches and timed switches created from
-the Configuration screen, with a name, an icon, a colour and a confirmation,
+**virtual buttons**: push buttons, switches, timed switches and selectors (2
+to 4 named positions) created from the Configuration screen, with a name, an icon, a colour and a confirmation,
 shown in a dashboard widget and used to start scenes. No cloud, no hardware.
 
 Born from a forum request (topic 11392): easy, customizable buttons for a
@@ -18,7 +18,7 @@ User documentation: [docs/en.md](docs/en.md) · [docs/fr.md](docs/fr.md).
 ```
 Gladys ⇄ SDK ⇄ src/handlers.js ⇄ src/app.js (ButtonsApp)
                                    ├─ src/buttons.js   names, fields, devices, params (pure)
-                                   ├─ src/widget.js    "Buttons" widget content (pure)
+                                   ├─ src/widget.js    "Buttons" and "Icons" widget contents (pure)
                                    ├─ src/store.js     /data/virtual-buttons.json
                                    └─ src/i18n.js      texts en/fr
 ```
@@ -29,7 +29,10 @@ Gladys ⇄ SDK ⇄ src/handlers.js ⇄ src/app.js (ButtonsApp)
   ignored).
 - **Devices** in the Discovery tab, created by the user: `button`/`push` for a
   push button (feature `press`), `switch`/`binary` for a switch or a timed
-  switch (feature `state`), all with `has_feedback: true`. External ids
+  switch (feature `state`), `text`/`select` for a selector (feature
+  `position`, values `"1"` … `"4"`, the position names as `supported_options`
+  labels, so a renamed position keeps its scenes), all with
+  `has_feedback: true`. External ids
   `ext:<selector>:button:b<12 hex>`, drawn once, never changed. The look of
   the button travels in the device params (`VB_*`), so a lost `/data` is
   rebuilt from the devices Gladys kept (never a removed one).
@@ -48,7 +51,11 @@ Gladys ⇄ SDK ⇄ src/handlers.js ⇄ src/app.js (ButtonsApp)
   clock went back) plus a sweep every 30 s (wall clock forward, restart); an
   end that passed while the container was stopped turns it off at the start;
   the return to off is never refused.
-- **Guards**: 20 presses or "on" a minute per button (a scene that triggers
+- **Selectors**: a change of position is guarded like an "on" (refused after
+  3.5 s, 20 a minute, saved before the ack); the position Gladys holds is
+  never published again; "Change a button" never removes the current
+  position.
+- **Guards**: 20 presses, "on" or changes of position a minute per button (a scene that triggers
   itself), "off" never refused; 240 states a minute in all; states Gladys
   refused sent again by the sweep (never a late push "1").
 - **Actions**: "Change a button" starts on "keep" (duration 0) and lists what
@@ -58,7 +65,13 @@ Gladys ⇄ SDK ⇄ src/handlers.js ⇄ src/app.js (ButtonsApp)
 - **Widget** "Buttons" (Gladys 5.1.0+): four settings `button_1` …
   `button_4`, one pill each (widget action `press_<n>`, params
   `{ id, value }`: the value the card showed, never a toggle; a confirmation
-  can be asked); a switch that is on shows its colour.
+  can be asked); a switch that is on shows its colour; a selector takes one
+  pill per position (the current one in colour with a tick) and a status line,
+  never half of its pills.
+- **Widget** "Icons": one page (setting `page`) of 10 icons of the forms, as a
+  status list (icon, label of the form, Feather name): the forms can only show
+  text. Icons are Feather names of the Gladys set (`server/config/icons.json`);
+  the core renders nothing else (no custom image, no shape but the pill).
 - No scene trigger nor scene action: the state change of the device already
   starts the scenes; a dedicated trigger would be redundant and loop-prone.
 

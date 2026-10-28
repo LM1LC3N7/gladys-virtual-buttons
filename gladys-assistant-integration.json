@@ -3,8 +3,8 @@
   "type": "device",
   "name": "Virtual buttons",
   "description": {
-    "en": "Your own buttons, switches and timed switches, with an icon, to start your scenes.",
-    "fr": "Vos propres boutons, interrupteurs et minuteries, avec une icône, pour lancer vos scènes."
+    "en": "Your own buttons, switches, timed switches and selectors, with an icon, for your scenes.",
+    "fr": "Vos boutons, interrupteurs, minuteries et sélecteurs, avec une icône, pour vos scènes."
   },
   "version": "0.1.1",
   "docker_image": "ghcr.io/lm1lc3n7/gladys-virtual-buttons:0.1.1",
@@ -21,8 +21,8 @@
         "fr": "Créez vos propres boutons"
       },
       "description": {
-        "en": "1. Click \"Add a button\" below: a name, a type, an icon. 2. Open the Discovery tab and click the green \"Add to Gladys\" button at the bottom of its card. 3. Create a scene with the trigger \"Device state change\": for a push button choose \"Simple click\"; for a switch choose \"On\" and switch on only the toggle \"Execute only when threshold is passed\". 4. Add the \"Buttons\" widget on your dashboard. The button does nothing by itself: the scene acts. Never use a switch for a sensitive command (gate, alarm, boiler): a \"turn everything off\", the voice or a scene can reach it; use a push button with confirmation. Tested with a fake Gladys only.",
-        "fr": "1. Cliquez sur « Ajouter un bouton » ci-dessous : un nom, un type, une icône. 2. Ouvrez l'onglet Découverte et cliquez sur le bouton vert « Ajouter à Gladys » en bas de sa carte. 3. Créez une scène avec le déclencheur « Changement d'état de l'appareil » : pour un poussoir, choisissez « Clic simple » ; pour un interrupteur, choisissez « On » et activez seulement la bascule « Exécuter seulement lorsque le seuil est passé ». 4. Ajoutez le widget « Boutons » sur votre tableau de bord. Le bouton ne fait rien tout seul : c'est la scène qui agit. N'utilisez jamais un interrupteur pour une commande sensible (portail, alarme, chaudière) : un « tout éteindre », la voix ou une scène peut l'atteindre ; prenez un poussoir avec confirmation. Testé seulement avec un faux Gladys."
+        "en": "1. Click \"Add a button\" below: a name, a type, an icon. 2. Open the Discovery tab and click the green \"Add to Gladys\" button at the bottom of its card. 3. Create a scene with the trigger \"Device state change\": for a push button choose \"Simple click\"; for a switch choose \"On\" (a selector: \"equal\" and the position) and switch on only the toggle \"Execute only when threshold is passed\". 4. Add the \"Buttons\" widget on your dashboard. The button does nothing by itself: the scene acts. Never use a switch for a sensitive command (gate, alarm, boiler): a \"turn everything off\", the voice or a scene can reach it; use a push button with confirmation. Tested with a fake Gladys only.",
+        "fr": "1. Cliquez sur « Ajouter un bouton » ci-dessous : un nom, un type, une icône. 2. Ouvrez l'onglet Découverte et cliquez sur le bouton vert « Ajouter à Gladys » en bas de sa carte. 3. Créez une scène avec le déclencheur « Changement d'état de l'appareil » : pour un poussoir, choisissez « Clic simple » ; pour un interrupteur, choisissez « On » (un sélecteur : « égal » et la position) et activez seulement la bascule « Exécuter seulement lorsque le seuil est passé ». 4. Ajoutez le widget « Boutons » sur votre tableau de bord. Le bouton ne fait rien tout seul : c'est la scène qui agit. N'utilisez jamais un interrupteur pour une commande sensible (portail, alarme, chaudière) : un « tout éteindre », la voix ou une scène peut l'atteindre ; prenez un poussoir avec confirmation. Testé seulement avec un faux Gladys."
       },
       "links": [
         {
@@ -107,6 +107,13 @@
                 "en": "Timed switch: goes back to off by itself after the duration below",
                 "fr": "Interrupteur temporisé : revient seul à l'arrêt après la durée ci-dessous"
               }
+            },
+            {
+              "value": "selector",
+              "label": {
+                "en": "Selector: 2 to 4 named positions (heating modes…), one at a time",
+                "fr": "Sélecteur : 2 à 4 positions nommées (modes de chauffage…), une seule à la fois"
+              }
             }
           ]
         },
@@ -127,6 +134,23 @@
           "max": 1440
         },
         {
+          "key": "positions",
+          "type": "string",
+          "label": {
+            "en": "Positions (selector only)",
+            "fr": "Positions (sélecteur seulement)"
+          },
+          "description": {
+            "en": "2 to 4 names separated by commas, in order, 20 characters each at most. The first one is the position at creation.",
+            "fr": "2 à 4 noms séparés par des virgules, dans l'ordre, 20 caractères chacun au plus. La première est la position à la création."
+          },
+          "placeholder": {
+            "en": "Comfort, Eco, Frost protection, Off",
+            "fr": "Confort, Éco, Hors-gel, Arrêt"
+          },
+          "required": false
+        },
+        {
           "key": "icon",
           "type": "select",
           "label": {
@@ -144,10 +168,73 @@
               }
             },
             {
+              "value": "toggle-right",
+              "label": {
+                "en": "Switch",
+                "fr": "Interrupteur"
+              }
+            },
+            {
+              "value": "check",
+              "label": {
+                "en": "Tick / confirm",
+                "fr": "Coche / valider"
+              }
+            },
+            {
+              "value": "x",
+              "label": {
+                "en": "Cross / cancel",
+                "fr": "Croix / annuler"
+              }
+            },
+            {
+              "value": "play",
+              "label": {
+                "en": "Play",
+                "fr": "Lecture"
+              }
+            },
+            {
+              "value": "pause",
+              "label": {
+                "en": "Pause",
+                "fr": "Pause"
+              }
+            },
+            {
+              "value": "square",
+              "label": {
+                "en": "Stop",
+                "fr": "Stop"
+              }
+            },
+            {
+              "value": "arrow-up",
+              "label": {
+                "en": "Up",
+                "fr": "Monter"
+              }
+            },
+            {
+              "value": "arrow-down",
+              "label": {
+                "en": "Down",
+                "fr": "Descendre"
+              }
+            },
+            {
               "value": "flame",
               "label": {
                 "en": "Flame / heating",
                 "fr": "Flamme / chauffage"
+              }
+            },
+            {
+              "value": "heater",
+              "label": {
+                "en": "Radiator",
+                "fr": "Radiateur"
               }
             },
             {
@@ -158,10 +245,66 @@
               }
             },
             {
+              "value": "snowflake",
+              "label": {
+                "en": "Cold / frost protection",
+                "fr": "Froid / hors-gel"
+              }
+            },
+            {
+              "value": "fan",
+              "label": {
+                "en": "Fan",
+                "fr": "Ventilateur"
+              }
+            },
+            {
+              "value": "wind",
+              "label": {
+                "en": "Wind / airing",
+                "fr": "Vent / aération"
+              }
+            },
+            {
+              "value": "leaf",
+              "label": {
+                "en": "Leaf / eco",
+                "fr": "Feuille / éco"
+              }
+            },
+            {
               "value": "lightbulb",
               "label": {
                 "en": "Light bulb",
                 "fr": "Ampoule"
+              }
+            },
+            {
+              "value": "sun",
+              "label": {
+                "en": "Sun / day",
+                "fr": "Soleil / jour"
+              }
+            },
+            {
+              "value": "moon",
+              "label": {
+                "en": "Moon / night",
+                "fr": "Lune / nuit"
+              }
+            },
+            {
+              "value": "sunrise",
+              "label": {
+                "en": "Sunrise / morning",
+                "fr": "Lever du soleil / matin"
+              }
+            },
+            {
+              "value": "sunset",
+              "label": {
+                "en": "Sunset / evening",
+                "fr": "Coucher du soleil / soir"
               }
             },
             {
@@ -179,10 +322,38 @@
               }
             },
             {
-              "value": "fan",
+              "value": "zap",
               "label": {
-                "en": "Fan",
-                "fr": "Ventilateur"
+                "en": "Lightning",
+                "fr": "Éclair"
+              }
+            },
+            {
+              "value": "droplet",
+              "label": {
+                "en": "Water",
+                "fr": "Eau"
+              }
+            },
+            {
+              "value": "bath",
+              "label": {
+                "en": "Bath",
+                "fr": "Bain"
+              }
+            },
+            {
+              "value": "shower-head",
+              "label": {
+                "en": "Shower",
+                "fr": "Douche"
+              }
+            },
+            {
+              "value": "sprout",
+              "label": {
+                "en": "Garden / watering",
+                "fr": "Jardin / arrosage"
               }
             },
             {
@@ -190,6 +361,13 @@
               "label": {
                 "en": "Music",
                 "fr": "Musique"
+              }
+            },
+            {
+              "value": "volume-2",
+              "label": {
+                "en": "Sound / volume",
+                "fr": "Son / volume"
               }
             },
             {
@@ -207,10 +385,10 @@
               }
             },
             {
-              "value": "door-open",
+              "value": "book",
               "label": {
-                "en": "Door",
-                "fr": "Porte"
+                "en": "Book",
+                "fr": "Livre"
               }
             },
             {
@@ -221,17 +399,38 @@
               }
             },
             {
-              "value": "moon",
+              "value": "door-open",
               "label": {
-                "en": "Moon / night",
-                "fr": "Lune / nuit"
+                "en": "Door",
+                "fr": "Porte"
               }
             },
             {
-              "value": "sun",
+              "value": "log-in",
               "label": {
-                "en": "Sun / day",
-                "fr": "Soleil / jour"
+                "en": "Arrival / coming home",
+                "fr": "Arrivée / retour"
+              }
+            },
+            {
+              "value": "log-out",
+              "label": {
+                "en": "Leaving",
+                "fr": "Départ"
+              }
+            },
+            {
+              "value": "lock",
+              "label": {
+                "en": "Padlock",
+                "fr": "Cadenas"
+              }
+            },
+            {
+              "value": "shield",
+              "label": {
+                "en": "Shield / security",
+                "fr": "Bouclier / sécurité"
               }
             },
             {
@@ -242,17 +441,31 @@
               }
             },
             {
-              "value": "star",
+              "value": "car",
               "label": {
-                "en": "Star",
-                "fr": "Étoile"
+                "en": "Car",
+                "fr": "Voiture"
               }
             },
             {
-              "value": "droplet",
+              "value": "bed",
               "label": {
-                "en": "Water",
-                "fr": "Eau"
+                "en": "Bed / bedtime",
+                "fr": "Lit / coucher"
+              }
+            },
+            {
+              "value": "sofa",
+              "label": {
+                "en": "Sofa / living room",
+                "fr": "Canapé / salon"
+              }
+            },
+            {
+              "value": "utensils",
+              "label": {
+                "en": "Meal / kitchen",
+                "fr": "Repas / cuisine"
               }
             },
             {
@@ -263,10 +476,31 @@
               }
             },
             {
-              "value": "zap",
+              "value": "users",
               "label": {
-                "en": "Lightning",
-                "fr": "Éclair"
+                "en": "Family / guests",
+                "fr": "Famille / invités"
+              }
+            },
+            {
+              "value": "party-popper",
+              "label": {
+                "en": "Party",
+                "fr": "Fête"
+              }
+            },
+            {
+              "value": "star",
+              "label": {
+                "en": "Star",
+                "fr": "Étoile"
+              }
+            },
+            {
+              "value": "alarm-clock",
+              "label": {
+                "en": "Alarm clock",
+                "fr": "Réveil"
               }
             },
             {
@@ -276,7 +510,11 @@
                 "fr": "Minuteur"
               }
             }
-          ]
+          ],
+          "description": {
+            "en": "To see the icons before choosing, add the \"Icons\" widget of this integration on a dashboard.",
+            "fr": "Pour voir les icônes avant de choisir, ajoutez le widget « Icônes » de cette intégration sur un tableau de bord."
+          }
         },
         {
           "key": "style",
@@ -392,6 +630,23 @@
           "max": 1440
         },
         {
+          "key": "positions",
+          "type": "string",
+          "label": {
+            "en": "New positions, selector (empty: unchanged)",
+            "fr": "Nouvelles positions, sélecteur (vide : inchangées)"
+          },
+          "description": {
+            "en": "2 to 4 names separated by commas. A position keeps its number: rename it in place, add or remove at the end. The current position cannot be removed.",
+            "fr": "2 à 4 noms séparés par des virgules. Une position garde son numéro : renommez-la à sa place, ajoutez ou retirez à la fin. La position actuelle ne peut pas être retirée."
+          },
+          "placeholder": {
+            "en": "Comfort, Eco, Frost protection, Off",
+            "fr": "Confort, Éco, Hors-gel, Arrêt"
+          },
+          "required": false
+        },
+        {
           "key": "icon",
           "type": "select",
           "label": {
@@ -416,10 +671,73 @@
               }
             },
             {
+              "value": "toggle-right",
+              "label": {
+                "en": "Switch",
+                "fr": "Interrupteur"
+              }
+            },
+            {
+              "value": "check",
+              "label": {
+                "en": "Tick / confirm",
+                "fr": "Coche / valider"
+              }
+            },
+            {
+              "value": "x",
+              "label": {
+                "en": "Cross / cancel",
+                "fr": "Croix / annuler"
+              }
+            },
+            {
+              "value": "play",
+              "label": {
+                "en": "Play",
+                "fr": "Lecture"
+              }
+            },
+            {
+              "value": "pause",
+              "label": {
+                "en": "Pause",
+                "fr": "Pause"
+              }
+            },
+            {
+              "value": "square",
+              "label": {
+                "en": "Stop",
+                "fr": "Stop"
+              }
+            },
+            {
+              "value": "arrow-up",
+              "label": {
+                "en": "Up",
+                "fr": "Monter"
+              }
+            },
+            {
+              "value": "arrow-down",
+              "label": {
+                "en": "Down",
+                "fr": "Descendre"
+              }
+            },
+            {
               "value": "flame",
               "label": {
                 "en": "Flame / heating",
                 "fr": "Flamme / chauffage"
+              }
+            },
+            {
+              "value": "heater",
+              "label": {
+                "en": "Radiator",
+                "fr": "Radiateur"
               }
             },
             {
@@ -430,10 +748,66 @@
               }
             },
             {
+              "value": "snowflake",
+              "label": {
+                "en": "Cold / frost protection",
+                "fr": "Froid / hors-gel"
+              }
+            },
+            {
+              "value": "fan",
+              "label": {
+                "en": "Fan",
+                "fr": "Ventilateur"
+              }
+            },
+            {
+              "value": "wind",
+              "label": {
+                "en": "Wind / airing",
+                "fr": "Vent / aération"
+              }
+            },
+            {
+              "value": "leaf",
+              "label": {
+                "en": "Leaf / eco",
+                "fr": "Feuille / éco"
+              }
+            },
+            {
               "value": "lightbulb",
               "label": {
                 "en": "Light bulb",
                 "fr": "Ampoule"
+              }
+            },
+            {
+              "value": "sun",
+              "label": {
+                "en": "Sun / day",
+                "fr": "Soleil / jour"
+              }
+            },
+            {
+              "value": "moon",
+              "label": {
+                "en": "Moon / night",
+                "fr": "Lune / nuit"
+              }
+            },
+            {
+              "value": "sunrise",
+              "label": {
+                "en": "Sunrise / morning",
+                "fr": "Lever du soleil / matin"
+              }
+            },
+            {
+              "value": "sunset",
+              "label": {
+                "en": "Sunset / evening",
+                "fr": "Coucher du soleil / soir"
               }
             },
             {
@@ -451,10 +825,38 @@
               }
             },
             {
-              "value": "fan",
+              "value": "zap",
               "label": {
-                "en": "Fan",
-                "fr": "Ventilateur"
+                "en": "Lightning",
+                "fr": "Éclair"
+              }
+            },
+            {
+              "value": "droplet",
+              "label": {
+                "en": "Water",
+                "fr": "Eau"
+              }
+            },
+            {
+              "value": "bath",
+              "label": {
+                "en": "Bath",
+                "fr": "Bain"
+              }
+            },
+            {
+              "value": "shower-head",
+              "label": {
+                "en": "Shower",
+                "fr": "Douche"
+              }
+            },
+            {
+              "value": "sprout",
+              "label": {
+                "en": "Garden / watering",
+                "fr": "Jardin / arrosage"
               }
             },
             {
@@ -462,6 +864,13 @@
               "label": {
                 "en": "Music",
                 "fr": "Musique"
+              }
+            },
+            {
+              "value": "volume-2",
+              "label": {
+                "en": "Sound / volume",
+                "fr": "Son / volume"
               }
             },
             {
@@ -479,10 +888,10 @@
               }
             },
             {
-              "value": "door-open",
+              "value": "book",
               "label": {
-                "en": "Door",
-                "fr": "Porte"
+                "en": "Book",
+                "fr": "Livre"
               }
             },
             {
@@ -493,17 +902,38 @@
               }
             },
             {
-              "value": "moon",
+              "value": "door-open",
               "label": {
-                "en": "Moon / night",
-                "fr": "Lune / nuit"
+                "en": "Door",
+                "fr": "Porte"
               }
             },
             {
-              "value": "sun",
+              "value": "log-in",
               "label": {
-                "en": "Sun / day",
-                "fr": "Soleil / jour"
+                "en": "Arrival / coming home",
+                "fr": "Arrivée / retour"
+              }
+            },
+            {
+              "value": "log-out",
+              "label": {
+                "en": "Leaving",
+                "fr": "Départ"
+              }
+            },
+            {
+              "value": "lock",
+              "label": {
+                "en": "Padlock",
+                "fr": "Cadenas"
+              }
+            },
+            {
+              "value": "shield",
+              "label": {
+                "en": "Shield / security",
+                "fr": "Bouclier / sécurité"
               }
             },
             {
@@ -514,17 +944,31 @@
               }
             },
             {
-              "value": "star",
+              "value": "car",
               "label": {
-                "en": "Star",
-                "fr": "Étoile"
+                "en": "Car",
+                "fr": "Voiture"
               }
             },
             {
-              "value": "droplet",
+              "value": "bed",
               "label": {
-                "en": "Water",
-                "fr": "Eau"
+                "en": "Bed / bedtime",
+                "fr": "Lit / coucher"
+              }
+            },
+            {
+              "value": "sofa",
+              "label": {
+                "en": "Sofa / living room",
+                "fr": "Canapé / salon"
+              }
+            },
+            {
+              "value": "utensils",
+              "label": {
+                "en": "Meal / kitchen",
+                "fr": "Repas / cuisine"
               }
             },
             {
@@ -535,10 +979,31 @@
               }
             },
             {
-              "value": "zap",
+              "value": "users",
               "label": {
-                "en": "Lightning",
-                "fr": "Éclair"
+                "en": "Family / guests",
+                "fr": "Famille / invités"
+              }
+            },
+            {
+              "value": "party-popper",
+              "label": {
+                "en": "Party",
+                "fr": "Fête"
+              }
+            },
+            {
+              "value": "star",
+              "label": {
+                "en": "Star",
+                "fr": "Étoile"
+              }
+            },
+            {
+              "value": "alarm-clock",
+              "label": {
+                "en": "Alarm clock",
+                "fr": "Réveil"
               }
             },
             {
@@ -548,7 +1013,11 @@
                 "fr": "Minuteur"
               }
             }
-          ]
+          ],
+          "description": {
+            "en": "To see the icons before choosing, add the \"Icons\" widget of this integration on a dashboard.",
+            "fr": "Pour voir les icônes avant de choisir, ajoutez le widget « Icônes » de cette intégration sur un tableau de bord."
+          }
         },
         {
           "key": "style",
@@ -712,6 +1181,67 @@
             "fr": "Bouton 4"
           },
           "required": false
+        }
+      ]
+    },
+    {
+      "key": "icons",
+      "label": {
+        "en": "Icons",
+        "fr": "Icônes"
+      },
+      "description": {
+        "en": "The icons of the buttons, with their name in the forms: to choose one.",
+        "fr": "Les icônes des boutons, avec leur nom dans les formulaires : pour choisir."
+      },
+      "icon": "grid",
+      "settings": [
+        {
+          "key": "page",
+          "type": "select",
+          "label": {
+            "en": "Page",
+            "fr": "Page"
+          },
+          "required": true,
+          "default": "1",
+          "options": [
+            {
+              "value": "1",
+              "label": {
+                "en": "Page 1 of 5",
+                "fr": "Page 1 sur 5"
+              }
+            },
+            {
+              "value": "2",
+              "label": {
+                "en": "Page 2 of 5",
+                "fr": "Page 2 sur 5"
+              }
+            },
+            {
+              "value": "3",
+              "label": {
+                "en": "Page 3 of 5",
+                "fr": "Page 3 sur 5"
+              }
+            },
+            {
+              "value": "4",
+              "label": {
+                "en": "Page 4 of 5",
+                "fr": "Page 4 sur 5"
+              }
+            },
+            {
+              "value": "5",
+              "label": {
+                "en": "Page 5 of 5",
+                "fr": "Page 5 sur 5"
+              }
+            }
+          ]
         }
       ]
     }

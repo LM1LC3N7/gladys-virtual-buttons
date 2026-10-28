@@ -21,11 +21,23 @@
 // - a timed switch is never lost: its own timer (which ends it even if the
 //   wall clock went back), plus a sweep every 30 s (wall clock forward, after
 //   a restart); the return to off is never refused;
-// - 20 presses or "on" a minute per button, 240 states a minute in all.
+// - a selector is on one of its positions; a change of position is
+//   guarded like an "on" (deadline, 20 a minute, saved before the ack), and
+//   the position Gladys already holds is never published again;
+// - 20 presses, "on" or changes of position a minute per button, 240 states
+//   a minute in all.
 // -----------------------------------------------------------------------------
 
 import { createLogger } from '@gladysassistant/integration-sdk';
-import { KINDS, LIMITS, TIMINGS, WIDGET_ACTION_KEY, WIDGET_SLOTS, WIDGETS } from './constants.js';
+import {
+  ICON_PAGES,
+  KINDS,
+  LIMITS,
+  TIMINGS,
+  WIDGET_ACTION_KEY,
+  WIDGET_SLOTS,
+  WIDGETS,
+} from './constants.js';
 import {
   buttonFromDevice,
   deviceOf,
@@ -35,12 +47,15 @@ import {
   isSwitchKind,
   nameKey,
   newId,
+  positionOfText,
   readFields,
   sanitizeButton,
+  toPosition,
+  wireOf,
 } from './buttons.js';
 import { ButtonError, T } from './i18n.js';
 import { FileStore, MAX_REMOVED } from './store.js';
-import { buttonsWidget, messageWidget } from './widget.js';
+import { buttonsWidget, iconsWidget, messageWidget } from './widget.js';
 
 const defaultTimers = { setTimeout, clearTimeout, setInterval, clearInterval };
 const MAX_DELAY = 2 ** 31 - 1;
@@ -267,6 +282,9 @@ export class ButtonsApp {
     for (const device of this.createdDevices()) {
       for (const f of Array.isArray(device?.features) ? device.features : []) {
         if (f?.external_id === feature) {
+          if (button.kind === KINDS.SELECTOR) {
+            return positionOfText(f.last_value_string, button);
+          }
           return typeof f.last_value === 'number' ? f.last_value : null;
         }
       }
@@ -352,7 +370,7 @@ export class ButtonsApp {
           return 'late';
         }
         attempt.started = true;
-        await this.gladys.publishState(featureOf(this.gladys, button), state);
+        await this.gladys.publishState(featureOf(this.gladys, button), wireOf(button, state));
         this.sent.set(button.id, state);
         if (this.buttons.get(button.id)?.state === state) {
           this.unpublished.delete(button.id);
@@ -388,11 +406,7 @@ export class ButtonsApp {
         if (this.inflight.has(id)) {
           continue;
         }
-        states.push({
-          id,
-          device_feature_external_id: featureOf(this.gladys, button),
-          state: button.state,
-        });
+        states.push({ id, button, state: button.state });
       }
       const batch = force ? states : states.slice(0, this.budget.free());
       if (batch.length === 0 || !this.budget.take(batch.length, { force })) {
@@ -402,10 +416,13 @@ export class ButtonsApp {
         const part = batch.slice(i, i + 100);
         try {
           await this.gladys.publishStates(
-            part.map(({ device_feature_external_id, state }) => ({
-              device_feature_external_id,
-              state,
-            })),
+            part.map(({ button, state }) => {
+              const wire = wireOf(button, state);
+              const feature = featureOf(this.gladys, button);
+              return typeof wire === 'number'
+                ? { device_feature_external_id: feature, state: wire }
+                : { device_feature_external_id: feature, ...wire };
+            }),
           );
           for (const { id, state } of part) {
             this.sent.set(id, state);
@@ -646,6 +663,55 @@ export class ButtonsApp {
     return { before: result.before, value, sent };
   }
 
+  /**
+   * A selector on one of its positions. Resolves { before, value, sent }
+   * like setSwitch. Every position is guarded like an "on": the late ones
+   * are refused, 20 changes a minute at most, saved before the ack.
+   */
+  async setPosition(button, position, received) {
+    const result = await this.run(async () => {
+      if (this.buttons.get(button.id) !== button) {
+        throw new ButtonError('unknownButton');
+      }
+      // Checked again here: "Change a button" may have shortened the list
+      // while this command waited its turn.
+      if (toPosition(position, button) === null) {
+        throw new ButtonError('badPosition');
+      }
+      if (this.mono() - received > TIMINGS.late) {
+        throw new ButtonError('late');
+      }
+      const before = button.state;
+      // Gladys already holds this very position: nothing to publish (a scene
+      // "= Eco -> set Eco" does not loop).
+      const held =
+        before === position &&
+        !this.unpublished.has(button.id) &&
+        !this.inflight.has(button.id) &&
+        (this.sent.get(button.id) === position || this.lastValue(button) === position);
+      if (held) {
+        return { before, publish: false };
+      }
+      this.admit(button, 1);
+      button.state = position;
+      try {
+        await this.save();
+      } catch (err) {
+        this.log.warn(`Save failed: ${err.message}`);
+        // A position that a restart would not find is refused.
+        button.state = before;
+        throw new ButtonError('saveFailed');
+      }
+      return { before, publish: true };
+    });
+    let sent = null;
+    if (result.publish) {
+      sent = this.publish(button, position);
+    }
+    this.refreshWidget();
+    return { before: result.before, value: position, sent };
+  }
+
   async ready() {
     await this.init();
   }
@@ -661,6 +727,16 @@ export class ButtonsApp {
     }
     if (feature?.external_id !== featureOf(this.gladys, button)) {
       throw new ButtonError('unknownButton');
+    }
+    if (button.kind === KINDS.SELECTOR) {
+      // Gladys sends the text of the option ("1" … "4"); a number, a name
+      // or anything else is not a position.
+      const position = positionOfText(value, button);
+      if (position === null) {
+        throw new ButtonError('badPosition');
+      }
+      await this.setPosition(button, position, received);
+      return;
     }
     // null, '' and '1' are not 1.
     if (value !== 0 && value !== 1) {
@@ -756,6 +832,13 @@ export class ButtonsApp {
       );
       if (error) {
         throw new ButtonError(error);
+      }
+      if (button.kind !== KINDS.SELECTOR) {
+        // The form sends the positions for every type: only a selector has some.
+        delete values.positions;
+      } else if (values.positions && values.positions.length < button.state) {
+        // The current position never disappears (Gladys holds it, scenes too).
+        throw new ButtonError('positionGone');
       }
       if (Object.keys(values).length === 0) {
         throw new ButtonError('nothingToChange');
@@ -930,6 +1013,13 @@ export class ButtonsApp {
     return buttonsWidget(shown, this.now());
   }
 
+  /** The icon preview widget: one page of the icons offered by the forms. */
+  async getIconsWidget({ settings = {} } = {}) {
+    const raw = settings && Object.hasOwn(settings, 'page') ? settings.page : '1';
+    const page = typeof raw === 'string' && /^[1-9][0-9]?$/.test(raw) ? Number(raw) : 1;
+    return iconsWidget(Math.min(Math.max(page, 1), ICON_PAGES));
+  }
+
   async widgetAction(actionKey, params) {
     const received = this.mono();
     await this.ready();
@@ -944,6 +1034,17 @@ export class ButtonsApp {
     }
     // The value the card asked for (decided on the state it showed), never a toggle.
     const value = has('value') ? params.value : null;
+    if (button.kind === KINDS.SELECTOR) {
+      const position = toPosition(value, button);
+      if (position === null) {
+        throw new ButtonError('badPosition');
+      }
+      const { before } = await this.setPosition(button, position, received);
+      const label = button.positions[position - 1] ?? String(position);
+      return before === position
+        ? T.alreadyPosition(button.name, label)
+        : T.positionSet(button.name, label);
+    }
     if (value !== 0 && value !== 1) {
       throw new ButtonError('badValue');
     }

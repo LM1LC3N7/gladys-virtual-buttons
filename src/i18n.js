@@ -15,6 +15,18 @@ export const ERRORS = Object.freeze({
     'Un bouton porte déjà ce nom : choisissez-en un autre.',
   ),
   kindUnknown: both('Choose the type of the button.', 'Choisissez le type du bouton.'),
+  positionsCount: both(
+    `A selector has ${LIMITS.positionsMin} to ${LIMITS.positionsMax} positions: type their names separated by commas (for example: Comfort, Eco, Frost protection, Off).`,
+    `Un sélecteur a de ${LIMITS.positionsMin} à ${LIMITS.positionsMax} positions : tapez leurs noms séparés par des virgules (par exemple : Confort, Éco, Hors-gel, Arrêt).`,
+  ),
+  positionsTaken: both(
+    'Two positions have the same name: give each one its own.',
+    'Deux positions portent le même nom : donnez à chacune le sien.',
+  ),
+  positionGone: both(
+    'The selector is on a position this new list removes: put it on another position first, then change the list.',
+    "Le sélecteur est sur une position que cette nouvelle liste supprime : mettez-le d'abord sur une autre position, puis changez la liste.",
+  ),
   iconUnknown: both('This icon is not in the list.', "Cette icône n'est pas dans la liste."),
   styleUnknown: both('This style is not in the list.', "Ce style n'est pas dans la liste."),
   confirmUnknown: both(
@@ -55,9 +67,13 @@ export const ERRORS = Object.freeze({
     "Ce bouton a été supprimé de l'intégration : supprimez son appareil dans Gladys.",
   ),
   badValue: both('A button only takes 0 or 1.', 'Un bouton ne prend que 0 ou 1.'),
+  badPosition: both(
+    'This position is not one of the selector.',
+    "Cette position n'est pas une de celles du sélecteur.",
+  ),
   tooFast: both(
-    `More than ${LIMITS.pressesPerButton} presses or "on" in a minute for this button (a scene that triggers itself?): refused for the rest of the minute. "Off" is never refused.`,
-    `Plus de ${LIMITS.pressesPerButton} appuis ou « marche » en une minute pour ce bouton (une scène qui se relance elle-même ?) : refusé jusqu'à la fin de la minute. Un « arrêt » n'est jamais refusé.`,
+    `More than ${LIMITS.pressesPerButton} presses, "on" or changes of position in a minute for this button (a scene that triggers itself?): refused for the rest of the minute. The "off" of a switch is never refused.`,
+    `Plus de ${LIMITS.pressesPerButton} appuis, « marche » ou changements de position en une minute pour ce bouton (une scène qui se relance elle-même ?) : refusé jusqu'à la fin de la minute. L'« arrêt » d'un interrupteur n'est jamais refusé.`,
   ),
   budget: both(
     'Too many commands in a minute for all the buttons: wait a minute.',
@@ -91,27 +107,60 @@ export class ButtonError extends Error {
 
 const quote = (name) => ({ en: `"${name}"`, fr: `« ${name} »` });
 
-/** Labels of the icons, the same as the manifest options (tested). */
+/**
+ * Labels of the icons, the same as the manifest options (tested): what the
+ * icon shows, then what it is good for.
+ */
 export const ICON_LABELS = Object.freeze({
   power: both('On / off', 'Marche / arrêt'),
+  'toggle-right': both('Switch', 'Interrupteur'),
+  check: both('Tick / confirm', 'Coche / valider'),
+  x: both('Cross / cancel', 'Croix / annuler'),
+  play: both('Play', 'Lecture'),
+  pause: both('Pause', 'Pause'),
+  square: both('Stop', 'Stop'),
+  'arrow-up': both('Up', 'Monter'),
+  'arrow-down': both('Down', 'Descendre'),
   flame: both('Flame / heating', 'Flamme / chauffage'),
+  heater: both('Radiator', 'Radiateur'),
   thermometer: both('Thermometer', 'Thermomètre'),
+  snowflake: both('Cold / frost protection', 'Froid / hors-gel'),
+  fan: both('Fan', 'Ventilateur'),
+  wind: both('Wind / airing', 'Vent / aération'),
+  leaf: both('Leaf / eco', 'Feuille / éco'),
   lightbulb: both('Light bulb', 'Ampoule'),
+  sun: both('Sun / day', 'Soleil / jour'),
+  moon: both('Moon / night', 'Lune / nuit'),
+  sunrise: both('Sunrise / morning', 'Lever du soleil / matin'),
+  sunset: both('Sunset / evening', 'Coucher du soleil / soir'),
   blinds: both('Shutter', 'Volet'),
   plug: both('Plug', 'Prise'),
-  fan: both('Fan', 'Ventilateur'),
+  zap: both('Lightning', 'Éclair'),
+  droplet: both('Water', 'Eau'),
+  bath: both('Bath', 'Bain'),
+  'shower-head': both('Shower', 'Douche'),
+  sprout: both('Garden / watering', 'Jardin / arrosage'),
   music: both('Music', 'Musique'),
+  'volume-2': both('Sound / volume', 'Son / volume'),
   film: both('Movie', 'Film'),
   tv: both('Television', 'Télévision'),
-  'door-open': both('Door', 'Porte'),
+  book: both('Book', 'Livre'),
   home: both('House', 'Maison'),
-  moon: both('Moon / night', 'Lune / nuit'),
-  sun: both('Sun / day', 'Soleil / jour'),
+  'door-open': both('Door', 'Porte'),
+  'log-in': both('Arrival / coming home', 'Arrivée / retour'),
+  'log-out': both('Leaving', 'Départ'),
+  lock: both('Padlock', 'Cadenas'),
+  shield: both('Shield / security', 'Bouclier / sécurité'),
   bell: both('Alarm / bell', 'Alarme / sonnette'),
-  star: both('Star', 'Étoile'),
-  droplet: both('Water', 'Eau'),
+  car: both('Car', 'Voiture'),
+  bed: both('Bed / bedtime', 'Lit / coucher'),
+  sofa: both('Sofa / living room', 'Canapé / salon'),
+  utensils: both('Meal / kitchen', 'Repas / cuisine'),
   coffee: both('Coffee', 'Café'),
-  zap: both('Lightning', 'Éclair'),
+  users: both('Family / guests', 'Famille / invités'),
+  'party-popper': both('Party', 'Fête'),
+  star: both('Star', 'Étoile'),
+  'alarm-clock': both('Alarm clock', 'Réveil'),
   timer: both('Timer', 'Minuteur'),
 });
 
@@ -134,6 +183,13 @@ function changes(values) {
     ],
     ['minutes', both('duration', 'durée'), (v) => both(`${v} min`, `${v} min`)],
   ];
+  if (Object.hasOwn(values, 'positions')) {
+    items.push([
+      'positions',
+      both('positions', 'positions'),
+      (v) => both(v.join(', '), v.join(', ')),
+    ]);
+  }
   const line = (lang) =>
     items
       .map(([key, label, show]) =>
@@ -196,6 +252,10 @@ export const T = Object.freeze({
       `${quote(name).en}: already on, duration started again (${minutes} min).`,
       `${quote(name).fr} : déjà en marche, durée relancée (${minutes} min).`,
     ),
+  positionSet: (name, position) =>
+    both(`${quote(name).en}: ${position}.`, `${quote(name).fr} : ${position}.`),
+  alreadyPosition: (name, position) =>
+    both(`${quote(name).en}: already on ${position}.`, `${quote(name).fr} : déjà sur ${position}.`),
   switchedOff: (name) => both(`${quote(name).en}: off.`, `${quote(name).fr} : arrêt.`),
   alreadyOff: (name) =>
     both(`${quote(name).en}: already off.`, `${quote(name).fr} : déjà à l'arrêt.`),
@@ -209,6 +269,16 @@ export const T = Object.freeze({
       'The buttons of this card were removed from the integration: edit the card.',
       "Les boutons de cette carte ont été supprimés de l'intégration : modifiez la carte.",
     ),
+    crowded: (names) =>
+      both(
+        `No room left on this card for: ${names.join(', ')}. A card shows 4 pills, and a selector one per position: show it on a card of its own.`,
+        `Plus de place sur cette carte pour : ${names.join(', ')}. Une carte affiche 4 pastilles, et un sélecteur une par position : affichez-le sur une carte à lui.`,
+      ),
+    iconsPage: (page, pages, from, to, total) =>
+      both(
+        `Page ${page} of ${pages}: icons ${from} to ${to} of ${total}, in the order of the "Icon" list of the forms.`,
+        `Page ${page} sur ${pages} : icônes ${from} à ${to} sur ${total}, dans l'ordre de la liste « Icône » des formulaires.`,
+      ),
     remaining: (items) =>
       both(
         items.map(([name, minutes]) => `${name}: ${minutes} min left`).join(' · '),

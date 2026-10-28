@@ -6,7 +6,13 @@
 // External ids: ext:<selector>:button:<id>, <id> = "b" + 12 hex digits drawn
 // once at creation and never changed (not the name: a renamed button keeps
 // its device, its history and its scenes). Features: <device>:press for a
-// push button, <device>:state for a switch or a timed switch.
+// push button, <device>:state for a switch or a timed switch,
+// <device>:position for a selector.
+//
+// A selector holds one of 2 to 4 named positions. Its state is the number of
+// the position (1 to 4), published to Gladys as the text "1" … "4" of a
+// text/select feature whose supported_options carry the names: a renamed
+// position keeps its number, so the scenes built on it keep working.
 // -----------------------------------------------------------------------------
 
 import { randomBytes } from 'node:crypto';
@@ -31,6 +37,42 @@ export const isId = (value) => typeof value === 'string' && ID.test(value);
 export const newId = () => `b${randomBytes(6).toString('hex')}`;
 
 export const isSwitchKind = (kind) => kind === KINDS.SWITCH || kind === KINDS.TIMED;
+
+/**
+ * The position names of a selector: a list, or a text whose names are
+ * separated by commas or semicolons. Each name cleaned and bounded. Returns
+ * { positions } or { error } (an i18n key).
+ */
+export function readPositions(raw) {
+  let items;
+  if (Array.isArray(raw)) {
+    items = raw.slice(0, LIMITS.positionsMax + 1);
+  } else if (typeof raw === 'string') {
+    items = raw.slice(0, 1000).split(/[,;]/);
+  } else {
+    return { error: 'positionsCount' };
+  }
+  const positions = items.map((item) => cleanName(item, LIMITS.positionName)).filter(Boolean);
+  if (positions.length < LIMITS.positionsMin || positions.length > LIMITS.positionsMax) {
+    return { error: 'positionsCount' };
+  }
+  if (new Set(positions.map(nameKey)).size !== positions.length) {
+    return { error: 'positionsTaken' };
+  }
+  return { positions };
+}
+
+/** A position number of a selector (1 … its count), or null. */
+export function toPosition(value, button) {
+  return Number.isInteger(value) && value >= 1 && value <= (button.positions?.length ?? 0)
+    ? value
+    : null;
+}
+
+/** The text Gladys holds for a position ("1" … "4"), back to its number, or null. */
+export function positionOfText(text, button) {
+  return typeof text === 'string' && /^[1-9]$/.test(text) ? toPosition(Number(text), button) : null;
+}
 
 /**
  * A name typed by the user: any type turned into text, control and format
@@ -100,6 +142,16 @@ export function sanitizeButton(raw, now = Date.now()) {
     state: isSwitchKind(kind) && raw.state === 1 ? 1 : 0,
     until: null,
   };
+  if (kind === KINDS.SELECTOR) {
+    // A selector without a valid list of positions cannot be one; its state
+    // is a position, the first one when unknown.
+    const { positions } = readPositions(raw.positions);
+    if (!positions) {
+      return null;
+    }
+    button.positions = positions;
+    button.state = toPosition(raw.state, button) ?? 1;
+  }
   if (kind === KINDS.TIMED && button.state === 1) {
     // An "on" without a valid end is turned off: a timer is never lost, and
     // an end is never trusted beyond the longest duration.
@@ -161,6 +213,18 @@ export function readFields(fields, { partial = false } = {}) {
   } else if (!partial) {
     values.confirm = DEFAULTS.confirm;
   }
+  // The positions belong to a selector only (the form sends the field for
+  // every type): "Add" reads them for a selector, "Change" passes them on
+  // and the app keeps them for a selector only.
+  if (has('positions') && (partial || values.kind === KINDS.SELECTOR)) {
+    const { positions, error } = readPositions(input.positions);
+    if (error) {
+      return { error };
+    }
+    values.positions = positions;
+  } else if (!partial && values.kind === KINDS.SELECTOR) {
+    return { error: 'positionsCount' };
+  }
   if (has('minutes')) {
     values.minutes = toMinutes(input.minutes);
     if (values.minutes === null) {
@@ -179,12 +243,22 @@ export function idsOf(gladys, id) {
     device: ids.device,
     feature: ids.feature(FEATURES.PRESS),
     state: ids.feature(FEATURES.STATE),
+    position: ids.feature(FEATURES.POSITION),
   };
 }
 
 /** The feature external id that carries the state of a button. */
-export const featureOf = (gladys, button) =>
-  button.kind === KINDS.PUSH ? idsOf(gladys, button.id).feature : idsOf(gladys, button.id).state;
+export function featureOf(gladys, button) {
+  const ids = idsOf(gladys, button.id);
+  if (button.kind === KINDS.PUSH) {
+    return ids.feature;
+  }
+  return button.kind === KINDS.SELECTOR ? ids.position : ids.state;
+}
+
+/** A state as Gladys takes it: a number, or the text of a selector position. */
+export const wireOf = (button, state) =>
+  button.kind === KINDS.SELECTOR ? { text: String(state) } : state;
 
 /** The device id → button id, or null for a device that is not ours. */
 export function idOfDevice(gladys, externalId) {
@@ -204,6 +278,44 @@ export function idOfDevice(gladys, externalId) {
  */
 export function deviceOf(gladys, button) {
   const ids = idsOf(gladys, button.id);
+  const params = [
+    { name: PARAMS.KIND, value: button.kind },
+    { name: PARAMS.LABEL, value: button.name },
+    { name: PARAMS.ICON, value: button.icon },
+    { name: PARAMS.STYLE, value: button.style },
+    { name: PARAMS.CONFIRM, value: button.confirm ? 'true' : 'false' },
+    { name: PARAMS.MINUTES, value: String(button.minutes) },
+  ];
+  if (button.kind === KINDS.SELECTOR) {
+    params.push({ name: PARAMS.POSITIONS, value: JSON.stringify(button.positions) });
+    return {
+      name: button.name,
+      external_id: ids.device,
+      features: [
+        {
+          name: button.name,
+          external_id: ids.position,
+          // A list of names no generic value set describes: the text/select
+          // feature, never a heating mode (a "set every heater to eco" would
+          // reach it). Values "1" … "4", labels the names (core rule: plain
+          // non-blank text without surrounding spaces, unique values).
+          category: DEVICE_FEATURE_CATEGORIES.TEXT,
+          type: DEVICE_FEATURE_TYPES.TEXT.SELECT,
+          read_only: false,
+          has_feedback: true,
+          keep_history: false,
+          min: 0,
+          max: 0,
+          supported_options: button.positions.map((label, index) => ({
+            value: String(index + 1),
+            label,
+            sort_order: index,
+          })),
+        },
+      ],
+      params,
+    };
+  }
   const push = button.kind === KINDS.PUSH;
   return {
     name: button.name,
@@ -221,15 +333,26 @@ export function deviceOf(gladys, button) {
         max: 1,
       },
     ],
-    params: [
-      { name: PARAMS.KIND, value: button.kind },
-      { name: PARAMS.LABEL, value: button.name },
-      { name: PARAMS.ICON, value: button.icon },
-      { name: PARAMS.STYLE, value: button.style },
-      { name: PARAMS.CONFIRM, value: button.confirm ? 'true' : 'false' },
-      { name: PARAMS.MINUTES, value: String(button.minutes) },
-    ],
+    params,
   };
+}
+
+/** The position names a selector device carries: its param, else its options. */
+function positionsOfDevice(params, feature) {
+  try {
+    const list = JSON.parse(params.get(PARAMS.POSITIONS) ?? 'null');
+    if (Array.isArray(list)) {
+      return list;
+    }
+  } catch {
+    // Unreadable param: the options below.
+  }
+  const options = Array.isArray(feature?.supported_options) ? feature.supported_options : [];
+  return options
+    .slice(0, LIMITS.positionsMax + 1)
+    .filter((o) => o && typeof o.label === 'string' && /^[1-9]$/.test(String(o.value)))
+    .sort((a, b) => Number(a.value) - Number(b.value))
+    .map((o) => o.label);
 }
 
 /** A button rebuilt from a device Gladys kept, or null. */
@@ -247,8 +370,28 @@ export function buttonFromDevice(gladys, device) {
   const feature = Array.isArray(device.features) ? device.features[0] : null;
   let kind = params.get(PARAMS.KIND);
   if (!KIND_LIST.includes(kind)) {
-    // No param: the feature tells a push button from a switch.
-    kind = feature?.category === DEVICE_FEATURE_CATEGORIES.SWITCH ? KINDS.SWITCH : KINDS.PUSH;
+    // No param: the feature tells the kind.
+    if (feature?.category === DEVICE_FEATURE_CATEGORIES.TEXT) {
+      kind = KINDS.SELECTOR;
+    } else {
+      kind = feature?.category === DEVICE_FEATURE_CATEGORIES.SWITCH ? KINDS.SWITCH : KINDS.PUSH;
+    }
+  }
+  if (kind === KINDS.SELECTOR) {
+    // A selector takes back the position Gladys holds (nothing published).
+    const positions = positionsOfDevice(params, feature);
+    const text = feature?.last_value_string;
+    return sanitizeButton({
+      id,
+      name: params.get(PARAMS.LABEL) || device.name,
+      kind,
+      icon: params.get(PARAMS.ICON),
+      style: params.get(PARAMS.STYLE),
+      confirm: params.get(PARAMS.CONFIRM) === 'true',
+      minutes: params.get(PARAMS.MINUTES),
+      positions,
+      state: typeof text === 'string' && /^[1-9]$/.test(text) ? Number(text) : 1,
+    });
   }
   // A plain switch takes back the value Gladys holds (nothing published, no
   // scene started); a timed switch always starts off (its end is unknown).

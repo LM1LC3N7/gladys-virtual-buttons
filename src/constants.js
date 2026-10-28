@@ -14,6 +14,7 @@ export const ACTIONS = Object.freeze({
 /** Dashboard widgets. */
 export const WIDGETS = Object.freeze({
   BUTTONS: 'buttons',
+  ICONS: 'icons',
 });
 
 /** The action key prefix of the widget buttons: press_1 … press_4 (unique within a content). */
@@ -23,48 +24,96 @@ export const WIDGET_ACTION_KEY = /^press_[1-4]$/;
 /** Widget settings: one select per slot, so the order is the user's. */
 export const WIDGET_SLOTS = Object.freeze(['button_1', 'button_2', 'button_3', 'button_4']);
 
-/** The three kinds of buttons. */
+/** The kinds of buttons. */
 export const KINDS = Object.freeze({
   PUSH: 'push',
   SWITCH: 'switch',
   TIMED: 'timed',
+  SELECTOR: 'selector',
 });
-export const KIND_LIST = Object.freeze([KINDS.PUSH, KINDS.SWITCH, KINDS.TIMED]);
+export const KIND_LIST = Object.freeze([KINDS.PUSH, KINDS.SWITCH, KINDS.TIMED, KINDS.SELECTOR]);
 
 /** Widget button styles (the core enum). */
 export const STYLES = Object.freeze(['primary', 'secondary', 'danger']);
 
 /**
  * The icons offered, all in the icon set of the Gladys frontend
- * (server/config/icons.json). The first is the default.
+ * (server/config/icons.json: the widgets render `fe fe-<name>`, nothing
+ * else), grouped by theme for the form. The first is the default. A value
+ * once offered stays offered: saved buttons keep it.
  */
 export const ICONS = Object.freeze([
+  // Commands
   'power',
+  'toggle-right',
+  'check',
+  'x',
+  'play',
+  'pause',
+  'square',
+  'arrow-up',
+  'arrow-down',
+  // Heating and air
   'flame',
+  'heater',
   'thermometer',
-  'lightbulb',
-  'blinds',
-  'plug',
+  'snowflake',
   'fan',
+  'wind',
+  'leaf',
+  // Light and time of day
+  'lightbulb',
+  'sun',
+  'moon',
+  'sunrise',
+  'sunset',
+  'blinds',
+  // Energy and water
+  'plug',
+  'zap',
+  'droplet',
+  'bath',
+  'shower-head',
+  'sprout',
+  // Media
   'music',
+  'volume-2',
   'film',
   'tv',
-  'door-open',
+  'book',
+  // House
   'home',
-  'moon',
-  'sun',
+  'door-open',
+  'log-in',
+  'log-out',
+  'lock',
+  'shield',
   'bell',
-  'star',
-  'droplet',
+  'car',
+  // Daily life
+  'bed',
+  'sofa',
+  'utensils',
   'coffee',
-  'zap',
+  'users',
+  'party-popper',
+  'star',
+  'alarm-clock',
   'timer',
 ]);
+
+/** The icon preview widget: this many icons a page (one status list holds 10). */
+export const ICONS_PER_PAGE = 10;
+export const ICON_PAGES = Math.ceil(ICONS.length / ICONS_PER_PAGE);
+
+/** The marker of the current position of a selector in the widget. */
+export const CURRENT_ICON = 'check-circle';
 
 /** Feature keys (part of the feature external ids: forever). */
 export const FEATURES = Object.freeze({
   PRESS: 'press',
   STATE: 'state',
+  POSITION: 'position',
 });
 
 /** Device params: what the button looks like, kept by Gladys with the device. */
@@ -75,6 +124,8 @@ export const PARAMS = Object.freeze({
   CONFIRM: 'VB_CONFIRM',
   MINUTES: 'VB_MINUTES',
   LABEL: 'VB_LABEL',
+  /** The position names of a selector, as a JSON array (selectors only). */
+  POSITIONS: 'VB_POSITIONS',
 });
 
 /** The external id type of a button: ext:<selector>:button:<id>. */
@@ -87,6 +138,13 @@ export const LIMITS = Object.freeze({
   minutesMax: 1440,
   /** A widget button label (core bound). */
   widgetLabel: 24,
+  /**
+   * Positions of a selector: each one is a pill of the widget, which holds 4
+   * buttons at most (the core content budget).
+   */
+  positionsMin: 2,
+  positionsMax: 4,
+  positionName: 20,
   /** Presses of one button in a minute (a scene that loops on its own button stops here). */
   pressesPerButton: 20,
   /** States published per minute, below the 300 of the host API. */

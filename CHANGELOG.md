@@ -10,6 +10,21 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Added
+
+- Selector, a fourth type of button: 2 to 4 named positions ("Comfort, Eco,
+  Frost protection, Off"), one at a time, remembered. In Gladys it is a
+  "Selection" device whose positions a scene picks by name ("equal"); a
+  renamed position keeps its scenes. In the widget, one pill per position, the
+  current one in colour with a tick, and a line with its current position.
+  Late, flooded or unsaved changes are refused, nothing sent; the position
+  Gladys holds is never sent again.
+- 30 more icons (50 in all, grouped by theme, with plain names: play, pause,
+  stop, radiator, frost protection, bed, meal, party…), and an "Icons" widget
+  that shows them with their names, to choose before creating a button.
+- Docs: what cannot be done from an integration (own icon files, round or
+  other button shapes, pull cord, rotary knob) and what to use instead.
+
 ## [0.1.1] - 2026-10-22
 
 ### Added

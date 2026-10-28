@@ -10,8 +10,8 @@ no build step) that runs in its own sandboxed Docker container and talks to
 Gladys through
 [`@gladysassistant/integration-sdk`](https://github.com/GladysAssistant/integration-sdk-js),
 its only runtime dependency. It started from the official JavaScript template.
-It lets users create virtual buttons (push buttons, switches, timed switches)
-with an icon and a colour, proposed in Discovery, shown in a dashboard widget,
+It lets users create virtual buttons (push buttons, switches, timed switches,
+selectors of 2 to 4 positions) with an icon and a colour, proposed in Discovery, shown in a dashboard widget,
 and used as scene triggers through their state changes.
 
 ## Commands
@@ -38,7 +38,7 @@ index.js                          SDK wiring only: handlers registered before co
 src/handlers.js                   the SDK handlers -> ButtonsApp (shared with the tests)
 src/app.js                        ButtonsApp: actions, commands, timers, budget, Discovery, status, widget
 src/buttons.js                    names, action fields, devices and params, recovery (pure)
-src/widget.js                     "Buttons" widget content (pure)
+src/widget.js                     "Buttons" and "Icons" widget contents (pure)
 src/store.js                      /data/virtual-buttons.json: buttons, states, ends, removed ids
 src/constants.js                  frozen keys, icons, limits, timings
 src/i18n.js                       texts shown in Gladys (en/fr)
@@ -52,12 +52,17 @@ scripts/cover.mjs                 cover.png generator (plain Node)
 ## Rules
 
 - **External ids are forever.** `button:b<12 hex>` drawn once at creation,
-  features `press` (push) and `state` (switches). Never derived from the name.
+  features `press` (push), `state` (switches) and `position` (selectors,
+  values "1" … "4": a position keeps its number when renamed). Never derived from the name.
   The same goes for every key users store: action keys and field values,
   widget key and settings (`button_1` … `button_4`), param names (`VB_*`).
 - **Never a light category**, never a new category for a nicer icon: a "turn
   off the lights" would reach it. Push = `button`/`push`, switches =
-  `switch`/`binary`.
+  `switch`/`binary`, selectors = `text`/`select` (never a heating mode).
+- **Icons are names of the Gladys set** (`server/config/icons.json`); a value
+  once offered stays offered. The `supported_options` of a selector follow
+  the core rule (`normalizeSupportedOptions`: non-blank label without
+  surrounding spaces, unique values), tested.
 - **No scene trigger nor scene action** without a loop guard: the integration
   never emits anything in reaction to a command that came from a scene.
 - **Timers are never lost**: an "on" of a timed switch is acknowledged only

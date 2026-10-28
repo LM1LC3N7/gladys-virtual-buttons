@@ -26,6 +26,8 @@ export function registerHandlers(gladys, app, logger) {
   gladys.onWidgetAction(WIDGETS.BUTTONS, (actionKey, params) =>
     app.widgetAction(actionKey, params),
   );
+  // The icon preview: read only, no action.
+  gladys.onWidgetGet(WIDGETS.ICONS, (request) => app.getIconsWidget(request));
 
   // Connection lifecycle (also after every reconnection to Gladys).
   gladys.on('connected', async () => {

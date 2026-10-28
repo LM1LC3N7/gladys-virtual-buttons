@@ -7,13 +7,14 @@ appareil MQTT.
 > Intégration non officielle. **Testé seulement avec un faux Gladys** (les
 > tests automatiques du projet), jamais encore sur une vraie installation.
 
-## Les trois types de bouton
+## Les quatre types de bouton
 
 | Type                       | Ce qu'il fait                                                                                                                   | Exemple              |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
 | **Bouton poussoir**        | Un appui = une impulsion : il passe à 1, puis revient seul à 0 une seconde plus tard.                                           | « Lancer Ciné »      |
 | **Interrupteur**           | Marche / arrêt, mémorisé (même après un redémarrage).                                                                           | « Mode nuit »        |
 | **Interrupteur temporisé** | Marche, puis revient seul à l'arrêt après la durée choisie (1 à 1440 minutes). Un nouvel appui sur « marche » relance la durée. | « Chauffage 30 min » |
+| **Sélecteur**              | 2 à 4 positions nommées, une seule à la fois, mémorisée ; chaque position peut lancer sa scène.                                 | « Mode chauffage »   |
 
 Un bouton **ne commande rien tout seul** : c'est une scène qui agit quand il
 change. Le bouton est la télécommande, la scène fait le travail.
@@ -25,11 +26,18 @@ change. Le bouton est la télécommande, la scène fait le travail.
 2. Cliquez sur **Ajouter un bouton**. Un petit formulaire s'ouvre :
    - **Nom** : par exemple `Chauffage` (40 caractères au plus ; le widget en
      affiche 24) ;
-   - **Type de bouton** : cochez l'une des trois lignes, chacune expliquée en
+   - **Type de bouton** : cochez l'une des quatre lignes, chacune expliquée en
      une phrase. Le type ne peut plus être changé ensuite ;
    - **Durée en minutes** : seulement pour l'interrupteur temporisé ;
-   - **Icône** : flamme / chauffage, ampoule, volet, prise, ventilateur,
-     musique, film, porte, maison, lune, soleil, alarme, étoile… ;
+   - **Positions** : seulement pour le sélecteur, 2 à 4 noms séparés par des
+     virgules, dans l'ordre, 20 caractères chacun au plus ; par exemple
+     `Confort, Éco, Hors-gel, Arrêt`. À la création, le sélecteur est sur la
+     première ;
+   - **Icône** : une liste de 50 icônes, chacune avec un nom parlant, rangées
+     par thème : marche / arrêt, interrupteur, lecture, pause, stop, flamme /
+     chauffage, radiateur, froid / hors-gel, ampoule, volet, prise, musique,
+     maison, porte, lit / coucher, repas / cuisine, fête… Pour les **voir avant
+     de choisir**, ajoutez le widget **Icônes** (voir plus bas) ;
    - **Couleur dans le widget** : principal (bleu), secondaire (gris) ou
      danger (rouge) ;
    - **Demander une confirmation avant l'appui (widget)** : oui ou non.
@@ -45,14 +53,15 @@ qui le validez.
    Ce que vous voyez : une **carte** par bouton. En haut, le nom du bouton en
    titre ; dessous, **« Fonctionnalités »** avec une étiquette
    (**« Bouton poussoir »** pour un poussoir, **« Commutateur »** pour un
-   interrupteur ou un interrupteur temporisé) ; puis un lien repliable
+   interrupteur ou un interrupteur temporisé, **« Sélection »** pour un
+   sélecteur) ; puis un lien repliable
    **« Paramètres techniques »** : c'est l'apparence du bouton (icône,
    couleur…), n'y touchez pas ; tout en bas, un bouton vert
    **« Ajouter à Gladys »**.
 2. Cliquez sur le bouton vert **« Ajouter à Gladys »**. L'en-tête de la carte
    affiche ensuite le badge **« Déjà ajouté »**.
 3. Le bouton apparaît dans l'onglet **Appareils**, avec la même étiquette
-   « Bouton poussoir » ou « Commutateur ».
+   « Bouton poussoir », « Commutateur » ou « Sélection ».
 
 ## Étape 3 : la scène qui agit
 
@@ -97,16 +106,34 @@ Ce que vous voyez sous l'appareil choisi : deux boutons **« On »** et
    l'action **désactive** la bascule de la prise. Pour un interrupteur
    temporisé, cette scène « Off » part aussi quand la durée se termine.
 
+### Pour un sélecteur
+
+Ce que vous voyez sous l'appareil choisi : une liste d'opérateurs, une liste
+des positions de votre sélecteur (par leur nom), puis les mêmes bascules que
+pour un interrupteur.
+
+1. Choisissez l'opérateur **« égal »**, puis la position dans la liste (par
+   exemple « Éco »). Si un champ de saisie apparaît à la place de la liste,
+   cliquez sur **« Choisir dans la liste des valeurs »**.
+2. Réglez les bascules comme pour un interrupteur : seule
+   « Exécuter seulement lorsque le seuil est passé » est activée.
+3. **Action** : par exemple **« Contrôler un appareil »** sur votre radiateur
+   ou votre fil pilote, avec le mode voulu.
+4. Faites une scène par position (4 positions = 4 scènes). Une position garde
+   son numéro même si vous la renommez : vos scènes continuent de marcher.
+
 ### Les boucles
 
 Ne faites pas une scène qui renvoie une commande **au bouton qui l'a
 déclenchée**. L'intégration s'en protège :
 
-- un appui ou un « marche » répété plus de **20 fois en une minute** sur le
-  même bouton est refusé jusqu'à la fin de la minute ;
-- un « arrêt » n'est **jamais** refusé ; un « arrêt » d'un interrupteur déjà à
-  l'arrêt (et un « marche » d'un interrupteur déjà en marche) est accepté sans
-  rien renvoyer à Gladys, donc sans relancer de scène.
+- un appui, un « marche » ou un changement de position répété plus de
+  **20 fois en une minute** sur le même bouton est refusé jusqu'à la fin de la
+  minute ;
+- l'« arrêt » d'un interrupteur n'est **jamais** refusé ; un « arrêt » d'un
+  interrupteur déjà à l'arrêt (et un « marche » d'un interrupteur déjà en
+  marche, ou la position où un sélecteur est déjà) est accepté sans rien
+  renvoyer à Gladys, donc sans relancer de scène.
 
 ## Étape 4 : le widget « Boutons » sur le tableau de bord
 
@@ -125,6 +152,15 @@ déclenchée**. L'intégration s'en protège :
      marche ») ;
    - pour un **interrupteur temporisé** allumé, une ligne indique le temps
      restant (« Chauffage : encore 25 min ») ;
+   - un **sélecteur** prend une pastille par position, et une ligne en haut
+     donne son nom et sa position actuelle (« Chauffage — Éco »). La position
+     actuelle est mise en avant : sa couleur et une coche, les autres en gris.
+     Un appui met le sélecteur sur la position de la pastille (le message dit
+     « déjà sur Éco » si c'était déjà le cas). Une carte a 4 pastilles au
+     plus : un sélecteur de 4 positions prend une carte à lui. Un sélecteur
+     qui n'a plus la place pour toutes ses positions n'en affiche aucune
+     (jamais la moitié) : sa ligne reste, et un message dit de l'afficher sur
+     une autre carte ;
    - si vous avez demandé une **confirmation**, Gladys demande de confirmer
      avant d'envoyer.
 4. Pour plus de 4 boutons, ajoutez plusieurs widgets. Gladys accepte au plus
@@ -133,10 +169,23 @@ déclenchée**. L'intégration s'en protège :
 
 Les boutons fonctionnent aussi dans les boîtes habituelles de Gladys : la boîte
 « Appareils » d'une pièce (bouton **« Appuyer »** pour un poussoir, interrupteur
-pour les autres), et pour les interrupteurs la boîte **« Actions rapides »**.
+pour les interrupteurs, liste déroulante des positions pour un sélecteur), et
+pour les interrupteurs la boîte **« Actions rapides »**.
 Là, l'icône est celle de Gladys : l'icône choisie ne s'affiche que dans le
 widget « Boutons ». **La confirmation n'existe que dans le widget** : la boîte
 « Appareils », une scène, la voix ou un assistant appuient sans demander.
+
+## Voir les icônes avant de choisir : le widget « Icônes »
+
+Les formulaires ne peuvent montrer que du texte : la liste « Icône » donne un
+nom à chaque icône, pas son dessin. Pour voir les dessins :
+
+1. Sur un tableau de bord, en mode édition, ajoutez une boîte et choisissez le
+   widget **Icônes** (de l'intégration Boutons virtuels).
+2. Dans son réglage **Page**, choisissez une page (1 à 5) : chacune montre 10
+   icônes, dans l'ordre de la liste « Icône » des formulaires, avec le dessin,
+   le nom affiché dans le formulaire et le nom technique.
+3. Une fois le choix fait, vous pouvez retirer ce widget.
 
 ## Modifier ou supprimer un bouton
 
@@ -147,6 +196,11 @@ widget « Boutons ». **La confirmation n'existe que dans le widget** : la boît
   inchangé… »). Le type ne change pas. Une nouvelle durée vaut au prochain
   « marche ». Un nouveau nom ne renomme pas l'appareil Gladys : renommez-le
   aussi dans l'onglet Appareils si vous le souhaitez.
+  Pour un **sélecteur**, le champ **Nouvelles positions** remplace la liste
+  (vide : inchangée). Une position garde son numéro : renommez-la à sa place,
+  ajoutez ou retirez à la fin. La position actuelle ne peut pas être retirée :
+  mettez d'abord le sélecteur sur une autre position. Gladys reçoit les
+  nouveaux noms au prochain envoi de la Découverte (tout de suite après).
   Le formulaire garde ses valeurs après un essai : **rechargez la page** avant
   de modifier un autre bouton. Si vous appliquez exactement les mêmes
   changements à un autre bouton juste après, l'intégration demande de
@@ -177,10 +231,16 @@ widget « Boutons ». **La confirmation n'existe que dans le widget** : la boît
   sait pas. Pour voir l'état réel, ajoutez un vrai capteur (prise avec mesure
   de puissance, thermomètre) sur votre tableau de bord.
 - Les boutons ne sont **jamais** déclarés comme des lumières, pour qu'un
-  « éteins les lumières » ne les atteigne pas.
-- Une commande « marche » ou un appui qui arrive trop tard (Gladys a déjà
-  affiché un échec, au bout de 5 secondes) est refusé : rien n'est envoyé. Un
-  « arrêt » est toujours appliqué.
+  « éteins les lumières » ne les atteigne pas. Un sélecteur n'est ni un
+  interrupteur ni un mode de chauffage de Gladys (c'est une « Sélection ») :
+  un « tout éteindre » ou un « mets tous les radiateurs en éco » ne le
+  change pas. Pour des modes de chauffage, c'est la scène qui agit, avec ses
+  conditions ; le sélecteur dit seulement ce que vous avez choisi.
+- Une commande « marche », un appui ou un changement de position qui arrive
+  trop tard (Gladys a déjà affiché un échec, au bout de 5 secondes) est
+  refusé : rien n'est envoyé. L'« arrêt » d'un interrupteur est toujours
+  appliqué. Un sélecteur n'a pas d'« arrêt » : toutes ses positions sont
+  traitées comme un « marche » (même une position nommée « Arrêt »).
 - Si le conteneur de l'intégration est arrêté, un appui échoue (Gladys
   l'affiche). Un interrupteur temporisé dont la durée est passée pendant
   l'arrêt revient à l'arrêt dès le redémarrage. Un redémarrage ou une
@@ -204,23 +264,38 @@ l'arrêt après une durée.
 
 ## Limites
 
-- 100 boutons au plus, 4 par widget (ajoutez plusieurs widgets).
+- 100 boutons au plus, 4 par widget (ajoutez plusieurs widgets) ; un
+  sélecteur a 4 positions au plus, car chacune est une pastille du widget et
+  une carte en compte 4 au plus.
 - Pas d'appui long ni de double appui, pas de couleur libre ni de taille de
   bouton : seulement les trois couleurs du widget.
+- **La forme des boutons est celle de Gladys** : une pastille avec une icône
+  et un nom. Une intégration externe ne dessine rien elle-même (pas de HTML
+  ni de CSS : Gladys affiche les widgets à partir d'une liste de composants
+  fixée par le cœur). Un **bouton rond marche / arrêt** n'existe donc pas ;
+  le plus proche : un interrupteur avec l'icône « Marche / arrêt » (ou
+  « Interrupteur »), en couleur « Danger (rouge) » si vous voulez qu'il se
+  voie. Une **tirette** ou un **bouton rotatif** non plus : prenez un
+  sélecteur, qui joue le même rôle avec ses pastilles.
+- **Pas d'icône personnelle** (fichier ICO, PNG, SVG) : Gladys n'affiche dans
+  les widgets que les icônes de sa propre collection, par leur nom. Si une
+  icône vous manque dans la liste, demandez-la sur le dépôt GitHub : elle
+  peut être ajoutée si Gladys l'a.
 - L'intégration ne lance pas les scènes elle-même : c'est le changement d'état
   du bouton qui les déclenche (étape 3).
 - Le widget se met à jour à chaque appui, et sinon toutes les 15 à 30
   secondes.
 - Si la liste enregistrée est perdue (nouveau volume), les boutons sont
-  reconstruits depuis les appareils de Gladys : un interrupteur reprend la
-  valeur connue de Gladys, un interrupteur temporisé revient à l'arrêt (sa
-  scène « Off » part).
+  reconstruits depuis les appareils de Gladys : un interrupteur et un
+  sélecteur reprennent la valeur connue de Gladys, un interrupteur temporisé
+  revient à l'arrêt (sa scène « Off » part).
 - Testé seulement avec un faux Gladys : merci de signaler ce qui ne marche pas
   sur le dépôt GitHub.
 
 ## Données
 
-La liste des boutons, leur état et la fin d'un interrupteur temporisé sont
+La liste des boutons, leur état, les positions d'un sélecteur et la fin d'un
+interrupteur temporisé sont
 gardés dans `/data/virtual-buttons.json`, le volume de l'intégration. Rien n'est
 envoyé hors de votre Gladys. Si ce fichier ne peut pas être lu, l'intégration
 ne l'écrase jamais et le dit dans son statut.
