@@ -191,3 +191,12 @@ up to date at the end of every milestone.
   fresher content (a window of a few hundred ms); the "Button" list of
   Change/Remove cannot be emptied again (reload the page); a new name exactly
   "keep" is taken as "unchanged".
+
+## Next patch (final check of the selector release)
+
+- `defaultedPositions` is never reset (`src/app.js`, `reportStatus`): after "Change a button" gives real names
+  back, the status still says the selector lost its position names until a restart.
+- Degenerate resume (param and options unusable) while Gladys holds position "3": the selector is rebuilt
+  with 2 positions and "1" is published over it, which can start a "= 1" scene. Very unlikely.
+- Docs (en ~l.262, fr ~l.280): the core thermostat box has a circular dial (`CircularGauge.jsx`), for real
+  thermostats only; same nuance as for the sliders.
