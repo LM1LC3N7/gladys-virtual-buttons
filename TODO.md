@@ -44,7 +44,7 @@ up to date at the end of every milestone.
       (2 to 4 positions, `text`/`select`), 50 icons with plain names, the
       "Icons" preview widget, docs on what an integration cannot draw. To
       check on a real Gladys: the scene editor shows the position names
-      (`supported_options`) for "equal", the device box shows the drop-down,
+      (`supported_options`) for "equal", the device box shows a button group (a drop-down if the room is short),
       the status list and the tick of the current pill render as expected.
 - [ ] **Milestone 3 — first release**: Docker image build check, Release
       workflow, topic, then the store validator once the image is published.

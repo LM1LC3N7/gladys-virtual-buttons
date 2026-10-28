@@ -62,6 +62,15 @@ export function readPositions(raw) {
   return { positions };
 }
 
+/** True when a name of the old list comes back in the new one at another rank. */
+export function positionsMoved(before, after) {
+  const keys = after.map(nameKey);
+  return before.some((name, index) => {
+    const at = keys.indexOf(nameKey(name));
+    return at !== -1 && at !== index;
+  });
+}
+
 /** A position number of a selector (1 … its count), or null. */
 export function toPosition(value, button) {
   return Number.isInteger(value) && value >= 1 && value <= (button.positions?.length ?? 0)
@@ -337,26 +346,40 @@ export function deviceOf(gladys, button) {
   };
 }
 
-/** The position names a selector device carries: its param, else its options. */
-function positionsOfDevice(params, feature) {
+/** Names given to the positions of a selector whose device kept no usable list. */
+const DEFAULT_POSITIONS = ['Position 1', 'Position 2'];
+
+/**
+ * The position names a selector device carries: its param, else its options,
+ * each one only when it makes a valid list; else the defaults (`notes`
+ * learns it, the status says it).
+ */
+function positionsOfDevice(params, feature, notes) {
   try {
     const list = JSON.parse(params.get(PARAMS.POSITIONS) ?? 'null');
-    if (Array.isArray(list)) {
+    if (readPositions(list).positions) {
       return list;
     }
   } catch {
     // Unreadable param: the options below.
   }
   const options = Array.isArray(feature?.supported_options) ? feature.supported_options : [];
-  return options
+  const fromOptions = options
     .slice(0, LIMITS.positionsMax + 1)
     .filter((o) => o && typeof o.label === 'string' && /^[1-9]$/.test(String(o.value)))
     .sort((a, b) => Number(a.value) - Number(b.value))
     .map((o) => o.label);
+  if (readPositions(fromOptions).positions) {
+    return fromOptions;
+  }
+  if (notes) {
+    notes.defaultPositions = true;
+  }
+  return DEFAULT_POSITIONS;
 }
 
-/** A button rebuilt from a device Gladys kept, or null. */
-export function buttonFromDevice(gladys, device) {
+/** A button rebuilt from a device Gladys kept, or null (`notes.defaultPositions` set when its positions were lost). */
+export function buttonFromDevice(gladys, device, notes = null) {
   const id = idOfDevice(gladys, device?.external_id);
   if (!id) {
     return null;
@@ -379,7 +402,7 @@ export function buttonFromDevice(gladys, device) {
   }
   if (kind === KINDS.SELECTOR) {
     // A selector takes back the position Gladys holds (nothing published).
-    const positions = positionsOfDevice(params, feature);
+    const positions = positionsOfDevice(params, feature, notes);
     const text = feature?.last_value_string;
     return sanitizeButton({
       id,

@@ -25,6 +25,17 @@ the notes of the version's GitHub Release.
 - Docs: what cannot be done from an integration (own icon files, round or
   other button shapes, pull cord, rotary knob) and what to use instead.
 
+### Fixed
+
+- "Change a button" refuses to move or insert a position of a selector in the
+  middle of the list (it silently renumbered the positions the scenes use):
+  rename in place, or add at the end.
+- A selector whose saved positions are unusable no longer drops out when the
+  buttons are rebuilt from Gladys: it takes the options of its device, else
+  "Position 1", "Position 2", and the status says so.
+- Docs: the "Devices" box shows a button group (a drop-down only when the room
+  is short); the own-icon and slider limits are worded precisely.
+
 ## [0.1.1] - 2026-10-22
 
 ### Added

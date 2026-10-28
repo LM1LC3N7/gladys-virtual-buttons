@@ -27,6 +27,10 @@ export const ERRORS = Object.freeze({
     'The selector is on a position this new list removes: put it on another position first, then change the list.',
     "Le sélecteur est sur une position que cette nouvelle liste supprime : mettez-le d'abord sur une autre position, puis changez la liste.",
   ),
+  positionsMoved: both(
+    'A position cannot be moved nor inserted in the middle: the scenes use its number. Rename a position in place, or add new ones at the end.',
+    'Une position ne peut être ni déplacée ni insérée au milieu : les scènes utilisent son numéro. Renommez une position à sa place, ou ajoutez-en à la fin.',
+  ),
   iconUnknown: both('This icon is not in the list.', "Cette icône n'est pas dans la liste."),
   styleUnknown: both('This style is not in the list.', "Ce style n'est pas dans la liste."),
   confirmUnknown: both(
@@ -227,6 +231,10 @@ export const T = Object.freeze({
   statusCorrupted: both(
     'The saved list in /data was unreadable (set aside as .bad): the buttons were rebuilt from the Gladys devices.',
     'La liste enregistrée dans /data était illisible (mise de côté en .bad) : les boutons ont été reconstruits depuis les appareils Gladys.',
+  ),
+  statusDefaultPositions: both(
+    'A selector lost the names of its positions: it was rebuilt with "Position 1", "Position 2"; change them with "Change a button".',
+    'Un sélecteur a perdu les noms de ses positions : il a été reconstruit avec « Position 1 », « Position 2 » ; changez-les avec « Modifier un bouton ».',
   ),
   statusUnreadable: both(
     'The saved list in /data cannot be read (permissions?): nothing is saved until the integration restarts, so the file is never overwritten.',

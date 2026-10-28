@@ -158,8 +158,8 @@ it**. The integration protects itself:
    presses a minute on the widgets of the integration, all widgets together.
 
 The buttons also work in the usual Gladys boxes: the "Devices" box of a room
-(a **"Push"** button for a push button, a toggle for the switches, a drop-down
-list of the positions for a selector), and for the switches the
+(a **"Push"** button for a push button, a toggle for the switches, a group of
+buttons for the positions of a selector, or a drop-down list when they do not fit), and for the switches the
 **"Quick actions"** box. There, the icon is the Gladys one: the
 icon you chose only shows in the "Buttons" widget. **The confirmation only
 exists in the widget**: the "Devices" box, a scene, the voice or an assistant
@@ -187,7 +187,8 @@ drawing. To see the drawings:
   device: rename it in the Devices tab too if you wish.
   For a **selector**, the field **New positions** replaces the list (empty:
   unchanged). A position keeps its number: rename it in place, add or remove
-  at the end. The current position cannot be removed: put the selector on
+  at the end (moving or inserting a position in the middle is refused: it
+  would change the numbers your scenes use). The current position cannot be removed: put the selector on
   another position first. Gladys gets the new names with the next Discovery
   publication (right after).
   The form keeps its values after a run: **reload the page** before changing
@@ -257,10 +258,14 @@ duration.
   renders the widgets from a list of components fixed by the core). So there
   is no **round on / off button**; the closest: a switch with the "On / off"
   (or "Switch") icon, in the "Danger (red)" colour if you want it to stand
-  out. No **pull cord** nor **rotary knob** either: take a selector, which
+  out. No **pull cord** either: Gladys has sliders, but for real functions
+  (light, volume), categories this module deliberately avoids so that it never
+  imitates a real device (a "turn off the lights" would reach it). Nor a
+  **rotary knob**, which Gladys does not have. Take a selector instead: it
   does the same job with its pills.
-- **No icon of your own** (ICO, PNG, SVG file): in the widgets, Gladys only
-  shows the icons of its own set, by their name. If an icon is missing from
+- **No icon of your own** on a button, a status line or a tile (ICO, PNG, SVG
+  file): Gladys only shows the icons of its own set there, by their name (the
+  widgets do have an image component, but it is a picture, not an icon). If an icon is missing from
   the list, ask for it on the GitHub repository: it can be added if Gladys
   has it.
 - The integration does not start scenes itself: the state change of the button

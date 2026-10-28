@@ -46,6 +46,7 @@ import {
   isId,
   isSwitchKind,
   nameKey,
+  positionsMoved,
   newId,
   positionOfText,
   readFields,
@@ -143,6 +144,8 @@ export class ButtonsApp {
     this.dirty = false;
     /** The last "Change a button": a second identical one for another button must be confirmed. */
     this.lastEdit = null;
+    // A recovered selector lost its position names: the status says so.
+    this.defaultedPositions = false;
     this.pendingEdit = null;
     this.sweepTimer = null;
     this.stopped = false;
@@ -244,9 +247,11 @@ export class ButtonsApp {
       if (this.buttons.size >= LIMITS.buttons) {
         break;
       }
-      const button = buttonFromDevice(this.gladys, device);
+      const notes = {};
+      const button = buttonFromDevice(this.gladys, device, notes);
       if (button && !this.nameTaken(button.name)) {
         this.buttons.set(button.id, button);
+        this.defaultedPositions ||= notes.defaultPositions === true;
         changed = true;
       }
     }
@@ -321,6 +326,9 @@ export class ButtonsApp {
     const created = this.createdIds();
     const count = [...this.buttons.keys()].filter((id) => created.has(id)).length;
     let message = T.status(this.buttons.size, count);
+    if (this.defaultedPositions) {
+      message = T.statusDefaultPositions;
+    }
     if (this.store.unreadable) {
       message = T.statusUnreadable;
     } else if (this.store.corrupted) {
@@ -839,6 +847,10 @@ export class ButtonsApp {
       } else if (values.positions && values.positions.length < button.state) {
         // The current position never disappears (Gladys holds it, scenes too).
         throw new ButtonError('positionGone');
+      } else if (values.positions && positionsMoved(button.positions, values.positions)) {
+        // The numbers follow the rank: a move or an insertion would point the
+        // scenes at other names without a word.
+        throw new ButtonError('positionsMoved');
       }
       if (Object.keys(values).length === 0) {
         throw new ButtonError('nothingToChange');

@@ -980,6 +980,40 @@ test('a selector: a shorter list never removes the current position; renamed in 
   assert.equal(t.store.data.buttons[1].positions, undefined);
 });
 
+test('a selector: moving or inserting a position is refused, a rename or an addition at the end is not', async () => {
+  const t = await setup();
+  await t.add(HEATING);
+  const device = await t.create('Chauffage');
+  const edit = (positions) =>
+    t.gladys.fake.action(ACTIONS.EDIT, { ...EDIT_FORM, button: device.external_id, positions });
+  const names = () => t.app.buttons.get(t.idOf(device)).positions;
+  for (const positions of [
+    'Confort, Boost, Éco, Hors-gel',
+    'Éco, Confort, Hors-gel, Arrêt',
+    'Confort, Hors-gel, Arrêt',
+  ]) {
+    const ack = await edit(positions);
+    assert.equal(ack.success, false, positions);
+    assert.match(ack.error, /ni déplacée ni insérée/, positions);
+    assert.deepEqual(names(), ['Confort', 'Éco', 'Hors-gel', 'Arrêt'], positions);
+  }
+  // A rename in place (with a case change) and a position added at the end.
+  let ack = await edit('confort, Boost, Hors-gel, Arrêt');
+  assert.equal(ack.success, true, ack.error);
+  await t.gladys.fake.action(ACTIONS.ADD, {
+    name: 'Court',
+    kind: 'selector',
+    positions: 'A, B, C',
+  });
+  const short = await t.create('Court');
+  ack = await t.gladys.fake.action(ACTIONS.EDIT, {
+    ...EDIT_FORM,
+    button: short.external_id,
+    positions: 'A, B, C, D',
+  });
+  assert.equal(ack.success, true, ack.error);
+});
+
 test('a selector: rebuilt from Gladys with the position it holds, nothing republished', async () => {
   const first = await setup();
   await first.add({ ...HEATING, icon: 'heater', style: 'danger', confirm: 'yes' });
@@ -1105,6 +1139,52 @@ test('the "Icons" widget: every icon of the forms, 10 a page, with its label', a
   }
 });
 
+test('the "Icons" widget: a page out of range is brought back to the last page, 0 to the first', async () => {
+  const t = await setup();
+  const first = (page) =>
+    t.gladys.fake
+      .widgetGet(WIDGETS.ICONS, { settings: { page } })
+      .then((ack) => ack.data.content.components.find((c) => c.type === 'status').items);
+  const lastPage = await first(String(ICON_PAGES));
+  assert.ok(lastPage.length > 0);
+  assert.deepEqual(await first(String(ICON_PAGES + 1)), lastPage);
+  for (const page of ['0', '99', '10', 'x', undefined]) {
+    const items = await first(page);
+    assert.ok(items.length > 0, `page ${String(page)} shows icons`);
+  }
+  assert.deepEqual(
+    (await first('0')).map((i) => i.value),
+    ICONS.slice(0, 10),
+  );
+  assert.deepEqual(
+    (await first('99')).map((i) => i.value),
+    lastPage.map((i) => i.value),
+  );
+});
+
+test('a selector: a value Gladys holds elsewhere is set, the one it holds is not sent again', async () => {
+  const t = await setup();
+  await t.add(HEATING);
+  const device = await t.create('Chauffage');
+  const feature = device.features[0];
+  await t.gladys.fake.setValue(device, feature, '2');
+  await t.clock.settle();
+  const count = () => t.states(feature.external_id).length;
+  // The very position Gladys holds: nothing sent.
+  const before = count();
+  assert.equal((await t.gladys.fake.setValue(device, feature, '2')).success, true);
+  await t.clock.settle();
+  assert.equal(count(), before);
+  // The app forgot what it sent (a reconnection) while Gladys holds another
+  // text: the same position must be published again.
+  t.app.sent.clear();
+  const [held] = t.gladys.devices;
+  held.features[0].last_value_string = '4';
+  assert.equal((await t.gladys.fake.setValue(device, feature, '2')).success, true);
+  await t.clock.settle();
+  assert.equal(count(), before + 1);
+});
+
 test('a selector: a position that a "Change" removed while the command waited is refused', async () => {
   const t = await setup();
   await t.add(HEATING);
@@ -1137,4 +1217,41 @@ test('a selector: a position that a "Change" removed while the command waited is
   assert.match(refused.error, /position/);
   assert.equal(t.app.buttons.get(t.idOf(device)).state, 1);
   assert.equal(t.gladys.fake.lastState(device.features[0].external_id), '1');
+});
+
+test('a selector rebuilt from a device whose positions are unusable: kept, defaults, status', async () => {
+  const first = await setup();
+  await first.add(HEATING);
+  const device = await first.create('Chauffage');
+  const rebuild = async (mutate) => {
+    const [copy] = withLastTexts(first, [device]);
+    mutate(copy);
+    return setup({ devices: [copy] });
+  };
+  // Five names in the param: the options of the feature are used.
+  let t = await rebuild((d) => {
+    d.params.find((p) => p.name === 'VB_POSITIONS').value = JSON.stringify([
+      'A',
+      'B',
+      'C',
+      'D',
+      'E',
+    ]);
+  });
+  assert.deepEqual(t.store.data.buttons[0].positions, ['Confort', 'Éco', 'Hors-gel', 'Arrêt']);
+  assert.doesNotMatch(t.gladys.fake.connectionStatus.message.fr, /perdu/);
+  // Neither the param nor the options are usable: defaults, said in the status.
+  t = await rebuild((d) => {
+    d.params.find((p) => p.name === 'VB_POSITIONS').value = JSON.stringify([
+      'A',
+      'B',
+      'C',
+      'D',
+      'E',
+    ]);
+    d.features[0].supported_options = [];
+  });
+  assert.equal(t.store.data.buttons.length, 1);
+  assert.deepEqual(t.store.data.buttons[0].positions, ['Position 1', 'Position 2']);
+  assert.match(t.gladys.fake.connectionStatus.message.fr, /perdu les noms/);
 });

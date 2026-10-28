@@ -169,7 +169,7 @@ déclenchée**. L'intégration s'en protège :
 
 Les boutons fonctionnent aussi dans les boîtes habituelles de Gladys : la boîte
 « Appareils » d'une pièce (bouton **« Appuyer »** pour un poussoir, interrupteur
-pour les interrupteurs, liste déroulante des positions pour un sélecteur), et
+pour les interrupteurs, groupe de boutons pour les positions d'un sélecteur, ou liste déroulante si la place manque), et
 pour les interrupteurs la boîte **« Actions rapides »**.
 Là, l'icône est celle de Gladys : l'icône choisie ne s'affiche que dans le
 widget « Boutons ». **La confirmation n'existe que dans le widget** : la boîte
@@ -198,7 +198,8 @@ nom à chaque icône, pas son dessin. Pour voir les dessins :
   aussi dans l'onglet Appareils si vous le souhaitez.
   Pour un **sélecteur**, le champ **Nouvelles positions** remplace la liste
   (vide : inchangée). Une position garde son numéro : renommez-la à sa place,
-  ajoutez ou retirez à la fin. La position actuelle ne peut pas être retirée :
+  ajoutez ou retirez à la fin (déplacer ou insérer une position au milieu est
+  refusé : cela changerait les numéros utilisés par vos scènes). La position actuelle ne peut pas être retirée :
   mettez d'abord le sélecteur sur une autre position. Gladys reçoit les
   nouveaux noms au prochain envoi de la Découverte (tout de suite après).
   Le formulaire garde ses valeurs après un essai : **rechargez la page** avant
@@ -275,10 +276,15 @@ l'arrêt après une durée.
   fixée par le cœur). Un **bouton rond marche / arrêt** n'existe donc pas ;
   le plus proche : un interrupteur avec l'icône « Marche / arrêt » (ou
   « Interrupteur »), en couleur « Danger (rouge) » si vous voulez qu'il se
-  voie. Une **tirette** ou un **bouton rotatif** non plus : prenez un
-  sélecteur, qui joue le même rôle avec ses pastilles.
-- **Pas d'icône personnelle** (fichier ICO, PNG, SVG) : Gladys n'affiche dans
-  les widgets que les icônes de sa propre collection, par leur nom. Si une
+  voie. Pas de **tirette** non plus : Gladys a des curseurs, mais pour de
+  vraies fonctions (lumière, volume), des catégories que ce module s'interdit
+  volontairement pour ne pas imiter un appareil réel (un « éteins les
+  lumières » l'atteindrait). Pas de **bouton rotatif** non plus : Gladys n'en
+  a pas. Prenez un sélecteur, qui joue le même rôle avec ses pastilles.
+- **Pas d'icône personnelle** sur un bouton, une ligne de statut ou une tuile
+  (fichier ICO, PNG, SVG) : Gladys n'y affiche que les icônes de sa propre
+  collection, par leur nom (les widgets ont bien un composant image, mais c'est
+  une image, pas une icône). Si une
   icône vous manque dans la liste, demandez-la sur le dépôt GitHub : elle
   peut être ajoutée si Gladys l'a.
 - L'intégration ne lance pas les scènes elle-même : c'est le changement d'état
