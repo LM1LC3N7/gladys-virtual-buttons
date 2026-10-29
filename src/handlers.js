@@ -23,8 +23,8 @@ export function registerHandlers(gladys, app, logger) {
 
   // Dashboard widget.
   gladys.onWidgetGet(WIDGETS.BUTTONS, (request) => app.getWidget(request));
-  gladys.onWidgetAction(WIDGETS.BUTTONS, (actionKey, params) =>
-    app.widgetAction(actionKey, params),
+  gladys.onWidgetAction(WIDGETS.BUTTONS, (actionKey, params, context) =>
+    app.widgetAction(actionKey, params, context?.values ?? null),
   );
   // The icon preview: read only, no action.
   gladys.onWidgetGet(WIDGETS.ICONS, (request) => app.getIconsWidget(request));

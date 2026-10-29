@@ -46,6 +46,20 @@ up to date at the end of every milestone.
       check on a real Gladys: the scene editor shows the position names
       (`supported_options`) for "equal", the device box shows a button group (a drop-down if the room is short),
       the status list and the tick of the current pill render as expected.
+- [x] **Forum feedback 2 (topic 11392 #11, Prof_Techno, 2026-10-29)**:
+      selectors of up to 6 positions (pilot wire); in the widget, a selector
+      of 5 or 6 positions is one pill whose action form (`fields`, a `select`)
+      lists the positions. Studied and refused, with sources in the docs:
+      icons next to the choices of a form (core option = `{ value, label }`,
+      `manifest.schema.json` `configField.options`, rendered as plain text by
+      `front/src/components/integration/ConfigSchemaForm.jsx`); a slider or a
+      rotary knob (no generic slider type in `DeviceRow.jsx`, none in the
+      widget vocabulary). To check on a real Gladys: the form of the pill
+      opens with the current position chosen, the device box shows the 6
+      positions as a drop-down when the row is short.
+- [ ] **Later, if asked**: a per-button option "show as a list in the widget"
+      for selectors of 2 to 4 positions (new field and `VB_*` param; the
+      existing ones keep their pills).
 - [ ] **Milestone 3 — first release**: Docker image build check, Release
       workflow, topic, then the store validator once the image is published.
 
@@ -198,5 +212,5 @@ up to date at the end of every milestone.
   back, the status still says the selector lost its position names until a restart.
 - Degenerate resume (param and options unusable) while Gladys holds position "3": the selector is rebuilt
   with 2 positions and "1" is published over it, which can start a "= 1" scene. Very unlikely.
-- Docs (en ~l.262, fr ~l.280): the core thermostat box has a circular dial (`CircularGauge.jsx`), for real
-  thermostats only; same nuance as for the sliders.
+- [x] Docs: the core thermostat box has a circular dial (`CircularGauge.jsx`), for real thermostats only
+      (done with the 6-position change).

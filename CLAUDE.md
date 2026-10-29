@@ -11,7 +11,7 @@ Gladys through
 [`@gladysassistant/integration-sdk`](https://github.com/GladysAssistant/integration-sdk-js),
 its only runtime dependency. It started from the official JavaScript template.
 It lets users create virtual buttons (push buttons, switches, timed switches,
-selectors of 2 to 4 positions) with an icon and a colour, proposed in Discovery, shown in a dashboard widget,
+selectors of 2 to 6 positions) with an icon and a colour, proposed in Discovery, shown in a dashboard widget,
 and used as scene triggers through their state changes.
 
 ## Commands
@@ -53,7 +53,7 @@ scripts/cover.mjs                 cover.png generator (plain Node)
 
 - **External ids are forever.** `button:b<12 hex>` drawn once at creation,
   features `press` (push), `state` (switches) and `position` (selectors,
-  values "1" … "4": a position keeps its number when renamed). Never derived from the name.
+  values "1" … "6": a position keeps its number when renamed). Never derived from the name.
   The same goes for every key users store: action keys and field values,
   widget key and settings (`button_1` … `button_4`), param names (`VB_*`).
 - **Never a light category**, never a new category for a nicer icon: a "turn

@@ -111,8 +111,8 @@
             {
               "value": "selector",
               "label": {
-                "en": "Selector: 2 to 4 named positions (heating modes…), one at a time",
-                "fr": "Sélecteur : 2 à 4 positions nommées (modes de chauffage…), une seule à la fois"
+                "en": "Selector: 2 to 6 named positions (heating modes…), one at a time",
+                "fr": "Sélecteur : 2 à 6 positions nommées (modes de chauffage…), une seule à la fois"
               }
             }
           ]
@@ -141,8 +141,8 @@
             "fr": "Positions (sélecteur seulement)"
           },
           "description": {
-            "en": "2 to 4 names separated by commas, in order, 20 characters each at most. The first one is the position at creation.",
-            "fr": "2 à 4 noms séparés par des virgules, dans l'ordre, 20 caractères chacun au plus. La première est la position à la création."
+            "en": "2 to 6 names separated by commas, in order, 20 characters each at most. The first one is the position at creation.",
+            "fr": "2 à 6 noms séparés par des virgules, dans l'ordre, 20 caractères chacun au plus. La première est la position à la création."
           },
           "placeholder": {
             "en": "Comfort, Eco, Frost protection, Off",
@@ -637,8 +637,8 @@
             "fr": "Nouvelles positions, sélecteur (vide : inchangées)"
           },
           "description": {
-            "en": "2 to 4 names separated by commas. A position keeps its number: rename it in place, add or remove at the end. The current position cannot be removed.",
-            "fr": "2 à 4 noms séparés par des virgules. Une position garde son numéro : renommez-la à sa place, ajoutez ou retirez à la fin. La position actuelle ne peut pas être retirée."
+            "en": "2 to 6 names separated by commas. A position keeps its number: rename it in place, add or remove at the end. The current position cannot be removed.",
+            "fr": "2 à 6 noms séparés par des virgules. Une position garde son numéro : renommez-la à sa place, ajoutez ou retirez à la fin. La position actuelle ne peut pas être retirée."
           },
           "placeholder": {
             "en": "Comfort, Eco, Frost protection, Off",

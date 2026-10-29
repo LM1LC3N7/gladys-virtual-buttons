@@ -10,6 +10,17 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Changed
+
+- A selector now holds up to 6 positions (was 4), for the 6 orders of a pilot
+  wire (Comfort, Comfort -1, Comfort -2, Eco, Frost protection, Off). The
+  selectors already created do not change. In the widget, a selector of 5 or 6
+  positions takes one pill that opens the list of its positions (needs a
+  Gladys whose widget buttons can open a form); up to 4 positions, one pill
+  each as before.
+- Docs: why a choice in a form cannot show its icon, and why there is no
+  slider nor rotary knob, with what exists instead (the list).
+
 ## [0.1.2] - 2026-10-28
 
 ### Added

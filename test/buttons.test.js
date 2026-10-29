@@ -78,7 +78,7 @@ test('the style of a pill', () => {
   assert.equal(styleOf({ kind: 'timed', style: 'secondary', state: 1 }), 'primary');
 });
 
-test('readPositions: 2 to 4 names, cleaned, bounded, unique', () => {
+test('readPositions: 2 to 6 names, cleaned, bounded, unique', () => {
   assert.deepEqual(readPositions('Confort, Éco;Hors-gel , Arrêt').positions, [
     'Confort',
     'Éco',
@@ -88,7 +88,14 @@ test('readPositions: 2 to 4 names, cleaned, bounded, unique', () => {
   assert.deepEqual(readPositions(['A', 'B']).positions, ['A', 'B']);
   assert.deepEqual(readPositions('A,\u0000,B').positions, ['A', 'B']);
   assert.equal(readPositions('x'.repeat(30) + ',y').positions[0], 'x'.repeat(20));
-  for (const bad of ['A', 'A,B,C,D,E', ['A', 'B', 'C', 'D', 'E'], '', ',,', null, 3, {}]) {
+  // The 6 orders of a pilot wire.
+  assert.deepEqual(
+    readPositions('Confort, Confort -1, Confort -2, Éco, Hors-gel, Arrêt').positions,
+    ['Confort', 'Confort -1', 'Confort -2', 'Éco', 'Hors-gel', 'Arrêt'],
+  );
+  assert.equal(readPositions(['A', 'B', 'C', 'D', 'E']).positions.length, 5);
+  const seven = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+  for (const bad of ['A', seven.join(','), seven, '', ',,', null, 3, {}]) {
     assert.equal(readPositions(bad).error, 'positionsCount', JSON.stringify(bad));
   }
   assert.equal(readPositions('Éco, ECO').error, 'positionsTaken');
@@ -180,4 +187,36 @@ test('the devices of v0.1 buttons do not change (ids, features, params)', () => 
   // A v0.1 /data entry loads unchanged (no new key).
   const saved = { ...base, kind: 'switch', confirm: false, state: 1, until: null };
   assert.deepEqual(sanitizeButton(saved), saved);
+});
+
+test('a selector of 6 positions: state, texts "1" … "6", a device and back', () => {
+  const positions = ['Confort', 'Confort -1', 'Confort -2', 'Éco', 'Hors-gel', 'Arrêt'];
+  const raw = { id: 'b0123456789ab', name: 'Fil pilote', kind: 'selector', positions };
+  assert.equal(sanitizeButton({ ...raw, state: 6 }).state, 6);
+  assert.equal(sanitizeButton({ ...raw, state: 7 }).state, 1);
+  // /data holding 7 names (hand-edited): the selector is dropped, never cut.
+  assert.equal(sanitizeButton({ ...raw, positions: [...positions, 'Boost'] }), null);
+  const button = sanitizeButton({ ...raw, state: 5 });
+  assert.equal(positionOfText('6', button), 6);
+  for (const text of ['7', '0', '06', 6]) {
+    assert.equal(positionOfText(text, button), null, JSON.stringify(text));
+  }
+  const gladys = createFakeGladys();
+  const device = deviceOf(gladys, button);
+  assert.deepEqual(
+    device.features[0].supported_options.map((o) => [o.value, o.label]),
+    positions.map((name, index) => [String(index + 1), name]),
+  );
+  const feature = { ...device.features[0], last_value_string: '6' };
+  assert.deepEqual(buttonFromDevice(gladys, { ...device, features: [feature] }), {
+    ...button,
+    state: 6,
+  });
+  // Without the param: the 6 options of the feature, in their order.
+  const params = device.params.filter((p) => p.name !== 'VB_POSITIONS');
+  const shuffled = { ...feature, supported_options: [...feature.supported_options].reverse() };
+  assert.deepEqual(
+    buttonFromDevice(gladys, { ...device, params, features: [shuffled] }).positions,
+    positions,
+  );
 });

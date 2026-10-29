@@ -17,9 +17,18 @@ export const WIDGETS = Object.freeze({
   ICONS: 'icons',
 });
 
+/** The pills a widget content holds (the core budget: 4 buttons). */
+export const WIDGET_PILLS = 4;
+
 /** The action key prefix of the widget buttons: press_1 … press_4 (unique within a content). */
 export const WIDGET_ACTION = 'press';
 export const WIDGET_ACTION_KEY = /^press_[1-4]$/;
+
+/**
+ * The field of the form a selector of more than WIDGET_PILLS positions opens
+ * in the widget: one pill, the list of its positions behind the tap.
+ */
+export const WIDGET_POSITION_FIELD = 'position';
 
 /** Widget settings: one select per slot, so the order is the user's. */
 export const WIDGET_SLOTS = Object.freeze(['button_1', 'button_2', 'button_3', 'button_4']);
@@ -139,11 +148,13 @@ export const LIMITS = Object.freeze({
   /** A widget button label (core bound). */
   widgetLabel: 24,
   /**
-   * Positions of a selector: each one is a pill of the widget, which holds 4
-   * buttons at most (the core content budget).
+   * Positions of a selector: 6 for the 6 orders of a pilot wire. Up to
+   * WIDGET_PILLS, each one is a pill of the widget; beyond, the widget shows
+   * one pill that opens the list (a content holds 4 buttons at most).
+   * Never above 9: a position is one digit, "1" … "9", in Gladys.
    */
   positionsMin: 2,
-  positionsMax: 4,
+  positionsMax: 6,
   positionName: 20,
   /** Presses of one button in a minute (a scene that loops on its own button stops here). */
   pressesPerButton: 20,

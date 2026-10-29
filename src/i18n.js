@@ -75,6 +75,10 @@ export const ERRORS = Object.freeze({
     'This position is not one of the selector.',
     "Cette position n'est pas une de celles du sélecteur.",
   ),
+  positionNotChosen: both(
+    'Choose a position in the list. If the card shows no list, update Gladys.',
+    "Choisissez une position dans la liste. Si la carte n'affiche pas de liste, mettez Gladys à jour.",
+  ),
   tooFast: both(
     `More than ${LIMITS.pressesPerButton} presses, "on" or changes of position in a minute for this button (a scene that triggers itself?): refused for the rest of the minute. The "off" of a switch is never refused.`,
     `Plus de ${LIMITS.pressesPerButton} appuis, « marche » ou changements de position en une minute pour ce bouton (une scène qui se relance elle-même ?) : refusé jusqu'à la fin de la minute. L'« arrêt » d'un interrupteur n'est jamais refusé.`,
@@ -279,9 +283,10 @@ export const T = Object.freeze({
     ),
     crowded: (names) =>
       both(
-        `No room left on this card for: ${names.join(', ')}. A card shows 4 pills, and a selector one per position: show it on a card of its own.`,
-        `Plus de place sur cette carte pour : ${names.join(', ')}. Une carte affiche 4 pastilles, et un sélecteur une par position : affichez-le sur une carte à lui.`,
+        `No room left on this card for: ${names.join(', ')}. A card shows 4 pills, and a selector of up to 4 positions one per position: show it on a card of its own.`,
+        `Plus de place sur cette carte pour : ${names.join(', ')}. Une carte affiche 4 pastilles, et un sélecteur de 4 positions au plus une par position : affichez-le sur une carte à lui.`,
       ),
+    positionField: both('Position', 'Position'),
     iconsPage: (page, pages, from, to, total) =>
       both(
         `Page ${page} of ${pages}: icons ${from} to ${to} of ${total}, in the order of the "Icon" list of the forms.`,

@@ -13,7 +13,7 @@ start a scene when you press them. No need to fake an MQTT device.
 | **Push button**  | One press = one pulse: it goes to 1, then back to 0 by itself one second later.                                             | "Start movie"    |
 | **Switch**       | On / off, remembered (even after a restart).                                                                                | "Night mode"     |
 | **Timed switch** | On, then back to off by itself after the chosen duration (1 to 1440 minutes). Pressing "on" again starts the duration over. | "Heating 30 min" |
-| **Selector**     | 2 to 4 named positions, one at a time, remembered; each position can start its own scene.                                   | "Heating mode"   |
+| **Selector**     | 2 to 6 named positions, one at a time, remembered; each position can start its own scene.                                   | "Heating mode"   |
 
 A button **controls nothing by itself**: a scene acts when it changes. The
 button is the remote, the scene does the work.
@@ -28,10 +28,11 @@ button is the remote, the scene does the work.
    - **Type of button**: tick one of the four lines, each explained in one
      sentence. The type cannot be changed later;
    - **Duration in minutes**: for the timed switch only;
-   - **Positions**: for the selector only, 2 to 4 names separated by commas,
+   - **Positions**: for the selector only, 2 to 6 names separated by commas,
      in order, 20 characters each at most; for example
-     `Comfort, Eco, Frost protection, Off`. At creation, the selector is on the
-     first one;
+     `Comfort, Eco, Frost protection, Off`, or the 6 orders of a pilot wire
+     `Comfort, Comfort -1, Comfort -2, Eco, Frost protection, Off`. At
+     creation, the selector is on the first one;
    - **Icon**: a list of 50 icons, each with a plain name, grouped by theme:
      on / off, switch, play, pause, stop, flame / heating, radiator, cold /
      frost protection, light bulb, shutter, plug, music, house, door, bed /
@@ -152,6 +153,12 @@ it**. The integration protects itself:
      positions takes a card of its own. A selector that has no room left for
      all its positions shows none (never half of them): its line stays, and a
      message says to show it on another card;
+   - a **selector of 5 or 6 positions** takes a single pill, with its icon and
+     name. A press opens a list of its positions, the current one already
+     chosen: pick one and confirm. This list needs a recent Gladys (the
+     version where a widget button can open a small form); with an older one
+     the press does nothing and the message asks to update Gladys. The
+     "Devices" box works with every version;
    - if you asked for a **confirmation**, Gladys asks you to confirm before
      sending.
 4. For more than 4 buttons, add several widgets. Gladys accepts at most 30
@@ -168,7 +175,11 @@ press without asking.
 ## See the icons before choosing: the "Icons" widget
 
 The forms can only show text: the "Icon" list gives each icon a name, not its
-drawing. To see the drawings:
+drawing. In Gladys, a choice of an integration form (drop-down list or radio
+buttons) holds a value and a name, nothing else: no room for a picture. The
+mode screens with icons (thermostat, air conditioning…) are drawn by Gladys
+itself for its own devices, and an integration cannot use them for its forms.
+To see the drawings:
 
 1. On a dashboard, in edit mode, add a box and choose the **Icons** widget (of
    the Virtual buttons integration).
@@ -248,9 +259,10 @@ duration.
 
 ## Limits
 
-- 100 buttons at most, 4 per widget (add several widgets); a selector has 4
-  positions at most, since each one is a pill of the widget and a card holds
-  4 at most.
+- 100 buttons at most, 4 per widget (add several widgets); a selector has 6
+  positions at most. Up to 4, each one is a pill of the widget; with 5 or 6,
+  the widget shows one pill that opens the list (a card holds 4 pills at
+  most).
 - No long press nor double press, no free colour nor button size: only the
   three colours of the widget.
 - **The shape of the buttons is the Gladys one**: a pill with an icon and a
@@ -258,11 +270,17 @@ duration.
   renders the widgets from a list of components fixed by the core). So there
   is no **round on / off button**; the closest: a switch with the "On / off"
   (or "Switch") icon, in the "Danger (red)" colour if you want it to stand
-  out. No **pull cord** either: Gladys has sliders, but for real functions
-  (light, volume), categories this module deliberately avoids so that it never
-  imitates a real device (a "turn off the lights" would reach it). Nor a
-  **rotary knob**, which Gladys does not have. Take a selector instead: it
-  does the same job with its pills.
+  out. No **pull cord** (slider) either: the "Devices" box of Gladys only
+  shows a slider for real functions (light, volume, shutter, fan, duration,
+  charge limit…), never for a plain number, and the widgets of an
+  integration have no slider at all. Using one of those functions would make
+  the button pass for a real device (a "turn off the lights" would reach it):
+  this module never does. Nor a **rotary knob**: Gladys only has a round
+  dial in its thermostat box, for real thermostats.
+  What exists is the **list**: the "Devices" box shows the positions of a
+  selector as a drop-down list when they do not fit on one line (Gladys
+  decides, depending on the width of the box), and the widget shows a list
+  for a selector of 5 or 6 positions.
 - **No icon of your own** on a button, a status line or a tile (ICO, PNG, SVG
   file): Gladys only shows the icons of its own set there, by their name (the
   widgets do have an image component, but it is a picture, not an icon). If an icon is missing from

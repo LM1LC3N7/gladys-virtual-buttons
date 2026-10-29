@@ -2,7 +2,7 @@
 
 [Gladys Assistant](https://gladysassistant.com) external integration for
 **virtual buttons**: push buttons, switches, timed switches and selectors (2
-to 4 named positions) created from the Configuration screen, with a name, an icon, a colour and a confirmation,
+to 6 named positions) created from the Configuration screen, with a name, an icon, a colour and a confirmation,
 shown in a dashboard widget and used to start scenes. No cloud, no hardware.
 
 Born from a forum request (topic 11392): easy, customizable buttons for a
@@ -30,7 +30,7 @@ Gladys ⇄ SDK ⇄ src/handlers.js ⇄ src/app.js (ButtonsApp)
 - **Devices** in the Discovery tab, created by the user: `button`/`push` for a
   push button (feature `press`), `switch`/`binary` for a switch or a timed
   switch (feature `state`), `text`/`select` for a selector (feature
-  `position`, values `"1"` … `"4"`, the position names as `supported_options`
+  `position`, values `"1"` … `"6"`, the position names as `supported_options`
   labels, so a renamed position keeps its scenes), all with
   `has_feedback: true`. External ids
   `ext:<selector>:button:b<12 hex>`, drawn once, never changed. The look of
@@ -67,11 +67,20 @@ Gladys ⇄ SDK ⇄ src/handlers.js ⇄ src/app.js (ButtonsApp)
   `{ id, value }`: the value the card showed, never a toggle; a confirmation
   can be asked); a switch that is on shows its colour; a selector takes one
   pill per position (the current one in colour with a tick) and a status line,
-  never half of its pills.
+  never half of its pills; a selector of 5 or 6 positions takes one pill whose
+  action opens a form with a `select` of its positions (widget action
+  `fields`, params `{ id }`, the choice in `values.position` as `"1"` …
+  `"6"`; no `values`, from a core without action forms: refused, nothing
+  changed).
 - **Widget** "Icons": one page (setting `page`) of 10 icons of the forms, as a
   status list (icon, label of the form, Feather name): the forms can only show
   text. Icons are Feather names of the Gladys set (`server/config/icons.json`);
   the core renders nothing else (no custom image, no shape but the pill).
+  Config and action form options are `{ value, label }` only (core
+  `manifest.schema.json`), so no icon next to a choice.
+- No slider: the core renders a slider only for typed features (light, volume,
+  shutter, fan, duration…), none generic, and the widget vocabulary has none;
+  this module never borrows such a category.
 - No scene trigger nor scene action: the state change of the device already
   starts the scenes; a dedicated trigger would be redundant and loop-prone.
 

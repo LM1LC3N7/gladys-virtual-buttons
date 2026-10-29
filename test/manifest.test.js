@@ -363,6 +363,7 @@ test('the options of a selector follow the rules of the core', () => {
   const gladys = createFakeGladys();
   for (const positions of [
     ['Confort', 'Éco', 'Hors-gel', 'Arrêt'],
+    ['Confort', 'Confort -1', 'Confort -2', 'Éco', 'Hors-gel', 'Arrêt'],
     ['  On  ', 'Off\t'],
     ['a', 'A ', 'b'],
   ]) {

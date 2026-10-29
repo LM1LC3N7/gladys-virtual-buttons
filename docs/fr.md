@@ -14,7 +14,7 @@ appareil MQTT.
 | **Bouton poussoir**        | Un appui = une impulsion : il passe à 1, puis revient seul à 0 une seconde plus tard.                                           | « Lancer Ciné »      |
 | **Interrupteur**           | Marche / arrêt, mémorisé (même après un redémarrage).                                                                           | « Mode nuit »        |
 | **Interrupteur temporisé** | Marche, puis revient seul à l'arrêt après la durée choisie (1 à 1440 minutes). Un nouvel appui sur « marche » relance la durée. | « Chauffage 30 min » |
-| **Sélecteur**              | 2 à 4 positions nommées, une seule à la fois, mémorisée ; chaque position peut lancer sa scène.                                 | « Mode chauffage »   |
+| **Sélecteur**              | 2 à 6 positions nommées, une seule à la fois, mémorisée ; chaque position peut lancer sa scène.                                 | « Mode chauffage »   |
 
 Un bouton **ne commande rien tout seul** : c'est une scène qui agit quand il
 change. Le bouton est la télécommande, la scène fait le travail.
@@ -29,10 +29,11 @@ change. Le bouton est la télécommande, la scène fait le travail.
    - **Type de bouton** : cochez l'une des quatre lignes, chacune expliquée en
      une phrase. Le type ne peut plus être changé ensuite ;
    - **Durée en minutes** : seulement pour l'interrupteur temporisé ;
-   - **Positions** : seulement pour le sélecteur, 2 à 4 noms séparés par des
+   - **Positions** : seulement pour le sélecteur, 2 à 6 noms séparés par des
      virgules, dans l'ordre, 20 caractères chacun au plus ; par exemple
-     `Confort, Éco, Hors-gel, Arrêt`. À la création, le sélecteur est sur la
-     première ;
+     `Confort, Éco, Hors-gel, Arrêt`, ou les 6 ordres d'un fil pilote
+     `Confort, Confort -1, Confort -2, Éco, Hors-gel, Arrêt`. À la création,
+     le sélecteur est sur la première ;
    - **Icône** : une liste de 50 icônes, chacune avec un nom parlant, rangées
      par thème : marche / arrêt, interrupteur, lecture, pause, stop, flamme /
      chauffage, radiateur, froid / hors-gel, ampoule, volet, prise, musique,
@@ -161,6 +162,13 @@ déclenchée**. L'intégration s'en protège :
      qui n'a plus la place pour toutes ses positions n'en affiche aucune
      (jamais la moitié) : sa ligne reste, et un message dit de l'afficher sur
      une autre carte ;
+   - un **sélecteur de 5 ou 6 positions** prend une seule pastille, avec son
+     icône et son nom. Un appui ouvre la liste de ses positions, l'actuelle
+     déjà choisie : choisissez-en une et validez. Cette liste demande un
+     Gladys récent (la version où un bouton de widget peut ouvrir un petit
+     formulaire) ; avec un plus ancien, l'appui ne change rien et le message
+     demande de mettre Gladys à jour. La boîte « Appareils » marche avec
+     toutes les versions ;
    - si vous avez demandé une **confirmation**, Gladys demande de confirmer
      avant d'envoyer.
 4. Pour plus de 4 boutons, ajoutez plusieurs widgets. Gladys accepte au plus
@@ -178,7 +186,12 @@ widget « Boutons ». **La confirmation n'existe que dans le widget** : la boît
 ## Voir les icônes avant de choisir : le widget « Icônes »
 
 Les formulaires ne peuvent montrer que du texte : la liste « Icône » donne un
-nom à chaque icône, pas son dessin. Pour voir les dessins :
+nom à chaque icône, pas son dessin. Dans Gladys, un choix d'un formulaire
+d'intégration (liste déroulante ou boutons radio) n'a qu'une valeur et un nom :
+pas de place pour un dessin. Les écrans de mode avec icônes (thermostat,
+climatisation…) sont dessinés par Gladys elle-même pour ses propres appareils,
+et une intégration ne peut pas s'en servir pour ses formulaires. Pour voir les
+dessins :
 
 1. Sur un tableau de bord, en mode édition, ajoutez une boîte et choisissez le
    widget **Icônes** (de l'intégration Boutons virtuels).
@@ -266,8 +279,9 @@ l'arrêt après une durée.
 ## Limites
 
 - 100 boutons au plus, 4 par widget (ajoutez plusieurs widgets) ; un
-  sélecteur a 4 positions au plus, car chacune est une pastille du widget et
-  une carte en compte 4 au plus.
+  sélecteur a 6 positions au plus. Jusqu'à 4, chacune est une pastille du
+  widget ; avec 5 ou 6, le widget montre une pastille qui ouvre la liste (une
+  carte compte 4 pastilles au plus).
 - Pas d'appui long ni de double appui, pas de couleur libre ni de taille de
   bouton : seulement les trois couleurs du widget.
 - **La forme des boutons est celle de Gladys** : une pastille avec une icône
@@ -276,11 +290,18 @@ l'arrêt après une durée.
   fixée par le cœur). Un **bouton rond marche / arrêt** n'existe donc pas ;
   le plus proche : un interrupteur avec l'icône « Marche / arrêt » (ou
   « Interrupteur »), en couleur « Danger (rouge) » si vous voulez qu'il se
-  voie. Pas de **tirette** non plus : Gladys a des curseurs, mais pour de
-  vraies fonctions (lumière, volume), des catégories que ce module s'interdit
-  volontairement pour ne pas imiter un appareil réel (un « éteins les
-  lumières » l'atteindrait). Pas de **bouton rotatif** non plus : Gladys n'en
-  a pas. Prenez un sélecteur, qui joue le même rôle avec ses pastilles.
+  voie. Pas de **tirette** (curseur) non plus : la boîte « Appareils » de
+  Gladys n'affiche un curseur que pour de vraies fonctions (lumière, volume,
+  volet, ventilateur, durée, limite de charge…), jamais pour un simple
+  nombre, et les widgets d'une intégration n'ont pas de curseur du tout.
+  Prendre l'une de ces fonctions ferait passer le bouton pour un vrai
+  appareil (un « éteins les lumières » l'atteindrait) : ce module ne le fait
+  jamais. Pas de **bouton rotatif** non plus : Gladys n'a un cadran rond que
+  dans sa boîte thermostat, pour de vrais thermostats. Ce qui
+  existe, c'est la **liste** : la boîte « Appareils » montre les positions
+  d'un sélecteur en liste déroulante quand elles ne tiennent pas sur une
+  ligne (Gladys décide, selon la largeur de la boîte), et le widget montre une
+  liste pour un sélecteur de 5 ou 6 positions.
 - **Pas d'icône personnelle** sur un bouton, une ligne de statut ou une tuile
   (fichier ICO, PNG, SVG) : Gladys n'y affiche que les icônes de sa propre
   collection, par leur nom (les widgets ont bien un composant image, mais c'est

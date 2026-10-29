@@ -1,8 +1,11 @@
 // -----------------------------------------------------------------------------
 // The dashboard widgets, pure. "Buttons": up to 4 pills, each with the icon,
-// label and style of its button; a selector takes one pill per position, the
-// current one marked (its colour and a tick), and a status line names it with
-// its current position. "Icons": one page of the icons the forms offer.
+// label and style of its button; a selector of up to 4 positions takes one
+// pill per position, the current one marked (its colour and a tick), and a
+// status line names it with its current position. A selector of 5 or 6
+// positions takes one pill that opens the list of its positions (a widget
+// action form: the core holds 4 buttons a content). "Icons": one page of the
+// icons the forms offer.
 //
 // Every pill carries a widget action (never device_feature + value): only an
 // action can ask a confirmation. The core tints a pill only for
@@ -20,6 +23,8 @@ import {
   LIMITS,
   TIMINGS,
   WIDGET_ACTION,
+  WIDGET_PILLS,
+  WIDGET_POSITION_FIELD,
 } from './constants.js';
 import { ICON_LABELS, T } from './i18n.js';
 
@@ -84,14 +89,23 @@ export function buttonsWidget(buttons, now) {
       })),
     });
   }
-  // At most 4 pills in a content (the core budget). A selector needs one per
-  // position: when they do not all fit, it gets none (never half a
-  // selector), and a line says to show it on a card of its own.
+  // At most 4 pills in a content (the core budget). A selector of up to 4
+  // positions needs one per position: when they do not all fit, it gets none
+  // (never half a selector), and a line says to show it on a card of its own.
+  // A longer selector gets one pill that opens the list of its positions.
   const pills = [];
   const crowded = [];
   for (const button of buttons) {
+    if (button.kind === KINDS.SELECTOR && button.positions.length > WIDGET_PILLS) {
+      if (pills.length >= WIDGET_PILLS) {
+        crowded.push(cut(button.name, 24));
+        continue;
+      }
+      pills.push({ button, label: button.name, icon: button.icon, style: lit(button), list: true });
+      continue;
+    }
     if (button.kind === KINDS.SELECTOR) {
-      if (pills.length + button.positions.length > 4) {
+      if (pills.length + button.positions.length > WIDGET_PILLS) {
         crowded.push(cut(button.name, 24));
         continue;
       }
@@ -108,7 +122,7 @@ export function buttonsWidget(buttons, now) {
       }
       continue;
     }
-    if (pills.length >= 4) {
+    if (pills.length >= WIDGET_PILLS) {
       crowded.push(cut(button.name, 24));
       continue;
     }
@@ -130,8 +144,13 @@ export function buttonsWidget(buttons, now) {
     // Action keys are unique within a content: press_1 … press_4.
     const action = {
       key: `${WIDGET_ACTION}_${index + 1}`,
-      params: { id: pill.button.id, value: pill.value },
+      params: pill.list ? { id: pill.button.id } : { id: pill.button.id, value: pill.value },
     };
+    if (pill.list) {
+      // The position chosen comes back in the values of the form, as the
+      // text of its number ("1" … "6"), like a command from Gladys.
+      action.fields = [positionField(pill.button)];
+    }
     if (pill.button.confirm) {
       action.confirm = true;
     }
@@ -146,6 +165,21 @@ export function buttonsWidget(buttons, now) {
   // Shorter cache while a timer runs, so the time left stays close.
   const ttl = running.length > 0 ? 15 : TIMINGS.widgetTtl;
   return { ttl_seconds: ttl, components };
+}
+
+/** The list of the positions of a selector, the current one chosen at first. */
+function positionField(button) {
+  return {
+    key: WIDGET_POSITION_FIELD,
+    type: 'select',
+    required: true,
+    label: T.widget.positionField,
+    options: button.positions.map((name, index) => ({
+      value: String(index + 1),
+      label: { en: name },
+    })),
+    default: String(button.state),
+  };
 }
 
 /** One page (1 … ICON_PAGES) of the icon preview: the icon, its label in the forms, its name. */

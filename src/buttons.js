@@ -9,8 +9,8 @@
 // push button, <device>:state for a switch or a timed switch,
 // <device>:position for a selector.
 //
-// A selector holds one of 2 to 4 named positions. Its state is the number of
-// the position (1 to 4), published to Gladys as the text "1" … "4" of a
+// A selector holds one of 2 to 6 named positions. Its state is the number of
+// the position (1 to 6), published to Gladys as the text "1" … "6" of a
 // text/select feature whose supported_options carry the names: a renamed
 // position keeps its number, so the scenes built on it keep working.
 // -----------------------------------------------------------------------------
@@ -78,7 +78,7 @@ export function toPosition(value, button) {
     : null;
 }
 
-/** The text Gladys holds for a position ("1" … "4"), back to its number, or null. */
+/** The text Gladys holds for a position ("1" … "6"), back to its number, or null. */
 export function positionOfText(text, button) {
   return typeof text === 'string' && /^[1-9]$/.test(text) ? toPosition(Number(text), button) : null;
 }
@@ -306,7 +306,7 @@ export function deviceOf(gladys, button) {
           external_id: ids.position,
           // A list of names no generic value set describes: the text/select
           // feature, never a heating mode (a "set every heater to eco" would
-          // reach it). Values "1" … "4", labels the names (core rule: plain
+          // reach it). Values "1" … "6", labels the names (core rule: plain
           // non-blank text without surrounding spaces, unique values).
           category: DEVICE_FEATURE_CATEGORIES.TEXT,
           type: DEVICE_FEATURE_TYPES.TEXT.SELECT,

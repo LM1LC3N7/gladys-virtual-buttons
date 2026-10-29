@@ -863,11 +863,11 @@ test('a selector: a text/select feature, its positions as options, "1" at creati
 test('a selector: types and positions are checked, a push ignores them', async () => {
   const t = await setup();
   for (const [positions, error] of [
-    [undefined, /2 à 4 positions/],
-    ['', /2 à 4 positions/],
-    ['Seul', /2 à 4 positions/],
-    ['A, B, C, D, E', /2 à 4 positions/],
-    [' , ;  ', /2 à 4 positions/],
+    [undefined, /2 à 6 positions/],
+    ['', /2 à 6 positions/],
+    ['Seul', /2 à 6 positions/],
+    ['A, B, C, D, E, F, G', /2 à 6 positions/],
+    [' , ;  ', /2 à 6 positions/],
     ['Éco, eco', /même nom/],
   ]) {
     const ack = await t.add({ name: `S ${String(positions)}`, kind: 'selector', positions });
@@ -1219,6 +1219,8 @@ test('a selector: a position that a "Change" removed while the command waited is
   assert.equal(t.gladys.fake.lastState(device.features[0].external_id), '1');
 });
 
+const SEVEN = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+
 test('a selector rebuilt from a device whose positions are unusable: kept, defaults, status', async () => {
   const first = await setup();
   await first.add(HEATING);
@@ -1228,30 +1230,237 @@ test('a selector rebuilt from a device whose positions are unusable: kept, defau
     mutate(copy);
     return setup({ devices: [copy] });
   };
-  // Five names in the param: the options of the feature are used.
+  // Seven names in the param: the options of the feature are used.
   let t = await rebuild((d) => {
-    d.params.find((p) => p.name === 'VB_POSITIONS').value = JSON.stringify([
-      'A',
-      'B',
-      'C',
-      'D',
-      'E',
-    ]);
+    d.params.find((p) => p.name === 'VB_POSITIONS').value = JSON.stringify(SEVEN);
   });
   assert.deepEqual(t.store.data.buttons[0].positions, ['Confort', 'Éco', 'Hors-gel', 'Arrêt']);
   assert.doesNotMatch(t.gladys.fake.connectionStatus.message.fr, /perdu/);
   // Neither the param nor the options are usable: defaults, said in the status.
   t = await rebuild((d) => {
-    d.params.find((p) => p.name === 'VB_POSITIONS').value = JSON.stringify([
-      'A',
-      'B',
-      'C',
-      'D',
-      'E',
-    ]);
+    d.params.find((p) => p.name === 'VB_POSITIONS').value = JSON.stringify(SEVEN);
     d.features[0].supported_options = [];
   });
   assert.equal(t.store.data.buttons.length, 1);
   assert.deepEqual(t.store.data.buttons[0].positions, ['Position 1', 'Position 2']);
   assert.match(t.gladys.fake.connectionStatus.message.fr, /perdu les noms/);
+});
+
+// The 6 orders of a pilot wire (forum topic 11392).
+const PILOT = {
+  name: 'Fil pilote',
+  kind: 'selector',
+  positions: 'Confort, Confort -1, Confort -2, Éco, Hors-gel, Arrêt',
+};
+const PILOT_NAMES = ['Confort', 'Confort -1', 'Confort -2', 'Éco', 'Hors-gel', 'Arrêt'];
+
+test('a selector of 6 positions: options "1" … "6", commands, cadence guard', async () => {
+  const t = await setup();
+  const ack = await t.add({ ...PILOT, icon: 'heater' });
+  assert.equal(ack.success, true, ack.error);
+  const device = await t.create('Fil pilote');
+  const [feature] = device.features;
+  assert.deepEqual([feature.category, feature.type], ['text', 'select']);
+  assert.deepEqual(
+    feature.supported_options.map((o) => [o.value, o.label]),
+    PILOT_NAMES.map((name, index) => [String(index + 1), name]),
+  );
+  assert.deepEqual((await t.gladys.fake.setValue(device, feature, '6')).success, true);
+  assert.equal(t.store.data.buttons[0].state, 6, 'saved before the ack');
+  await t.clock.settle();
+  assert.equal(t.gladys.fake.lastState(feature.external_id), '6');
+  for (const bad of ['7', '0', '06', 6]) {
+    assert.equal((await t.gladys.fake.setValue(device, feature, bad)).success, false, bad);
+  }
+  // The cadence guard holds for every position, 5 and 6 included.
+  await t.clock.advance(61 * 1000);
+  let refused = null;
+  for (let i = 0; i < 25 && !refused; i += 1) {
+    const value = i % 2 === 0 ? '5' : '6';
+    const answer = await t.gladys.fake.setValue(device, feature, value);
+    if (!answer.success) {
+      refused = { i, answer };
+    }
+  }
+  assert.equal(refused.i, LIMITS.pressesPerButton);
+  assert.match(refused.answer.error, /changements de position/);
+});
+
+test('a selector grows from 4 to 6 positions at the end; moves, inserts and 7 refused', async () => {
+  const t = await setup();
+  await t.add(HEATING);
+  const device = await t.create('Chauffage');
+  await t.gladys.fake.setValue(device, device.features[0], '4');
+  const edit = (positions) =>
+    t.gladys.fake.action(ACTIONS.EDIT, { ...EDIT_FORM, button: device.external_id, positions });
+  const button = () => t.app.buttons.get(t.idOf(device));
+  for (const [positions, error] of [
+    ['Confort, Éco, Hors-gel, Arrêt, Boost, Absent, Vacances', /2 à 6 positions/],
+    ['Confort, Boost, Éco, Hors-gel, Arrêt, Absent', /ni déplacée ni insérée/],
+    ['Confort, Éco, Arrêt, Hors-gel, Boost, Absent', /ni déplacée ni insérée/],
+  ]) {
+    const ack = await edit(positions);
+    assert.equal(ack.success, false, positions);
+    assert.match(ack.error, error, positions);
+    assert.deepEqual(button().positions, ['Confort', 'Éco', 'Hors-gel', 'Arrêt'], positions);
+  }
+  let ack = await edit('Confort, Éco, Hors-gel, Arrêt, Boost, Absent');
+  assert.equal(ack.success, true, ack.error);
+  assert.equal(button().state, 4, 'the position keeps its number');
+  await t.clock.settle();
+  const republished = t.gladys.fake.discoveredDevices.find((d) => d.name === 'Chauffage');
+  assert.deepEqual(
+    republished.features[0].supported_options.map((o) => o.value),
+    ['1', '2', '3', '4', '5', '6'],
+  );
+  // A rename in place keeps the number (and the scenes built on it).
+  ack = await edit('Confort, Éco, Hors-gel, Arrêt, Boost, Absence');
+  assert.equal(ack.success, true, ack.error);
+  await t.gladys.fake.setValue(device, device.features[0], '6');
+  // Back to 5 while on 6: the current position is never removed.
+  ack = await edit('Confort, Éco, Hors-gel, Arrêt, Boost');
+  assert.equal(ack.success, false);
+  assert.match(ack.error, /supprime/);
+  assert.equal(button().positions.length, 6);
+});
+
+test('a selector of 6 positions: rebuilt after a restart at the position Gladys holds', async () => {
+  const first = await setup();
+  await first.add({ ...PILOT, icon: 'heater', style: 'danger' });
+  const device = await first.create('Fil pilote');
+  await first.gladys.fake.setValue(device, device.features[0], '5');
+  await first.clock.settle();
+  const devices = withLastTexts(first, [device]);
+  await first.app.stop();
+
+  // Same /data: nothing sent at the connection, still on 5.
+  const same = await setup({ store: first.store, devices });
+  assert.equal(same.store.data.buttons[0].state, 5);
+  assert.deepEqual(same.states(device.features[0].external_id), []);
+
+  // /data lost: rebuilt from the params, at the position Gladys holds.
+  const again = await setup({ devices });
+  const [button] = again.store.data.buttons;
+  assert.deepEqual([button.positions, button.state], [PILOT_NAMES, 5]);
+  assert.deepEqual(again.states(device.features[0].external_id), []);
+
+  // Without the param: the 6 options of the feature.
+  const bare = withLastTexts(first, [device]);
+  bare[0].params = bare[0].params.filter((p) => p.name !== 'VB_POSITIONS');
+  const third = await setup({ devices: bare });
+  assert.deepEqual(
+    [third.store.data.buttons[0].positions, third.store.data.buttons[0].state],
+    [PILOT_NAMES, 5],
+  );
+});
+
+test('a selector of 6 positions in the widget: one pill that opens the list', async () => {
+  const t = await setup();
+  await t.add({ ...PILOT, icon: 'heater', confirm: 'yes' });
+  await t.add({ name: 'Ciné', kind: 'push', icon: 'film' });
+  await t.add({ name: 'Nuit', kind: 'switch', icon: 'moon' });
+  await t.add({ name: 'Volets', kind: 'selector', positions: 'Ouverts, Fermés', icon: 'blinds' });
+  await t.add({ name: 'Porte', kind: 'push' });
+  const pilot = await t.create('Fil pilote');
+  const cine = await t.create('Ciné');
+  const night = await t.create('Nuit');
+  const blinds = await t.create('Volets');
+  const door = await t.create('Porte');
+  const id = t.idOf(pilot);
+  await t.gladys.fake.setValue(pilot, pilot.features[0], '2');
+  const get = async (settings) => {
+    const ack = await t.gladys.fake.widgetGet(WIDGETS.BUTTONS, { settings });
+    assert.equal(ack.success, true);
+    assert.deepEqual(validateWidgetContent(ack.data.content), []);
+    return ack.data.content.components;
+  };
+  let components = await get({ button_1: pilot.external_id });
+  let pills = components.filter((c) => c.type === 'button');
+  assert.equal(pills.length, 1);
+  const [pill] = pills;
+  assert.deepEqual(
+    [pill.label, pill.icon, pill.style, pill.action.key, pill.action.confirm, pill.action.params],
+    ['Fil pilote', 'heater', 'primary', 'press_1', true, { id }],
+  );
+  assert.deepEqual(pill.action.fields, [
+    {
+      key: 'position',
+      type: 'select',
+      required: true,
+      label: { en: 'Position', fr: 'Position' },
+      options: PILOT_NAMES.map((name, index) => ({
+        value: String(index + 1),
+        label: { en: name },
+      })),
+      default: '2',
+    },
+  ]);
+  assert.deepEqual(components.find((c) => c.type === 'status').items, [
+    { label: 'Fil pilote', value: 'Confort -1', icon: 'heater', color: 'primary' },
+  ]);
+
+  // The position chosen in the list, as the core relays it.
+  const tap = (values, params = pill.action.params) =>
+    t.gladys.fake.widgetAction(WIDGETS.BUTTONS, 'press_1', params, values ? { values } : {});
+  let answer = await tap({ position: '5' });
+  assert.equal(answer.success, true, answer.error);
+  assert.match(answer.data.message.fr, /« Fil pilote » : Hors-gel\./);
+  assert.equal(t.app.buttons.get(id).state, 5);
+  await t.clock.settle();
+  assert.equal(t.gladys.fake.lastState(pilot.features[0].external_id), '5');
+  answer = await tap({ position: '5' });
+  assert.match(answer.data.message.fr, /déjà sur Hors-gel/);
+  // A Gladys without the form sends no values: nothing changes, it says why.
+  answer = await tap(null);
+  assert.equal(answer.success, false);
+  assert.match(answer.error, /mettez Gladys à jour/);
+  for (const bad of ['7', '0', '05', 5, '', null, ['6']]) {
+    answer = await tap({ position: bad });
+    assert.equal(answer.success, false, JSON.stringify(bad));
+    assert.match(answer.error, /position/);
+  }
+  assert.equal(t.app.buttons.get(id).state, 5);
+  // The next content offers the new position first.
+  components = await get({ button_1: pilot.external_id });
+  assert.equal(components.find((c) => c.type === 'button').action.fields[0].default, '5');
+
+  // One pill among others: 4 pills fit, a fifth button is crowded out.
+  components = await get({
+    button_1: cine.external_id,
+    button_2: pilot.external_id,
+    button_3: night.external_id,
+    button_4: blinds.external_id,
+  });
+  pills = components.filter((c) => c.type === 'button');
+  assert.deepEqual(
+    pills.map((p) => [p.label, p.action.key, Boolean(p.action.fields)]),
+    [
+      ['Ciné', 'press_1', false],
+      ['Fil pilote', 'press_2', true],
+      ['Nuit', 'press_3', false],
+    ],
+  );
+  assert.match(
+    components.find((c) => c.type === 'text' && c.variant === 'body').text.fr,
+    /Plus de place sur cette carte pour : Volets\./,
+  );
+  components = await get({
+    button_1: cine.external_id,
+    button_2: night.external_id,
+    button_3: door.external_id,
+    button_4: blinds.external_id,
+  });
+  // Without the long selector, a short one keeps its pills (no list, no form).
+  pills = components.filter((c) => c.type === 'button');
+  assert.ok(pills.every((p) => p.action.fields === undefined));
+  components = await get({
+    button_1: cine.external_id,
+    button_2: night.external_id,
+    button_3: door.external_id,
+    button_4: pilot.external_id,
+  });
+  assert.deepEqual(
+    components.filter((c) => c.type === 'button').map((p) => p.label),
+    ['Ciné', 'Nuit', 'Porte', 'Fil pilote'],
+  );
 });

@@ -35,6 +35,7 @@ import {
   LIMITS,
   TIMINGS,
   WIDGET_ACTION_KEY,
+  WIDGET_POSITION_FIELD,
   WIDGET_SLOTS,
   WIDGETS,
 } from './constants.js';
@@ -737,7 +738,7 @@ export class ButtonsApp {
       throw new ButtonError('unknownButton');
     }
     if (button.kind === KINDS.SELECTOR) {
-      // Gladys sends the text of the option ("1" … "4"); a number, a name
+      // Gladys sends the text of the option ("1" … "6"); a number, a name
       // or anything else is not a position.
       const position = positionOfText(value, button);
       if (position === null) {
@@ -1032,7 +1033,11 @@ export class ButtonsApp {
     return iconsWidget(Math.min(Math.max(page, 1), ICON_PAGES));
   }
 
-  async widgetAction(actionKey, params) {
+  /**
+   * onWidgetAction: a tap on a pill. `values` is the form of a selector of
+   * more than 4 positions: the position chosen in its list.
+   */
+  async widgetAction(actionKey, params, values = null) {
     const received = this.mono();
     await this.ready();
     if (typeof actionKey !== 'string' || !WIDGET_ACTION_KEY.test(actionKey)) {
@@ -1047,7 +1052,21 @@ export class ButtonsApp {
     // The value the card asked for (decided on the state it showed), never a toggle.
     const value = has('value') ? params.value : null;
     if (button.kind === KINDS.SELECTOR) {
-      const position = toPosition(value, button);
+      let position;
+      if (has('value')) {
+        position = toPosition(value, button);
+      } else {
+        // The pill of a long selector: the list of the form (validated by
+        // the core against the options this card showed), checked again.
+        const chosen =
+          values && typeof values === 'object' && Object.hasOwn(values, WIDGET_POSITION_FIELD)
+            ? values[WIDGET_POSITION_FIELD]
+            : undefined;
+        if (chosen === undefined) {
+          throw new ButtonError('positionNotChosen');
+        }
+        position = positionOfText(chosen, button);
+      }
       if (position === null) {
         throw new ButtonError('badPosition');
       }
