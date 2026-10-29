@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-10-29
+
 ### Fixed
 
 - Widget: a selector no longer adds a status row (its position showed as a
@@ -97,7 +99,8 @@ the notes of the version's GitHub Release.
 - Step-by-step guides in English and French, with the exact words of the
   Gladys screens.
 
-[Unreleased]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/LM1LC3N7/gladys-virtual-buttons/releases/tag/v0.1.1
