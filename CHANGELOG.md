@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-10-29
+
 ### Changed
 
 - A selector now holds up to 6 positions (was 4), for the 6 orders of a pilot
@@ -83,6 +85,7 @@ the notes of the version's GitHub Release.
 - Step-by-step guides in English and French, with the exact words of the
   Gladys screens.
 
-[Unreleased]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/LM1LC3N7/gladys-virtual-buttons/releases/tag/v0.1.1
