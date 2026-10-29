@@ -214,3 +214,17 @@ up to date at the end of every milestone.
   with 2 positions and "1" is published over it, which can start a "= 1" scene. Very unlikely.
 - [x] Docs: the core thermostat box has a circular dial (`CircularGauge.jsx`), for real thermostats only
       (done with the 6-position change).
+
+## Next patch (review r2 of the 6-position selector, 031d45c)
+
+Minors from `_lots/hors-lot/virtual-buttons-r2.md`, none blocking:
+
+1. Test a long selector crowded out by 4 pills (mutant M8: the core drops the 5th pill silently).
+2. Tests for another key in `values` (M1) and the 24-character cut of a long name (M16).
+3. Docs: the Confirmation option does nothing on a 5–6 position selector (the core ignores `confirm` on a button with a form).
+4. Docs: name the Gladys version that opens the form (5.2.0); the manifest still says >=5.1.0.
+5. Optional: `display: 'radio'` for the form.
+6. Docs: an emoji at the start of a position name works as an icon.
+7. The "no room left" line text changed for existing selectors: say so in the CHANGELOG.
+8. No action.
+9. The form default can be up to 30 s stale.
