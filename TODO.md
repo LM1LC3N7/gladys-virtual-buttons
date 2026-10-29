@@ -174,8 +174,11 @@ up to date at the end of every milestone.
   refuses to remove the current position (a command queued behind it is
   checked again). Recovery: the param, else the options of the feature, the
   position from `last_value_string`. In the widget, a selector gets all its
-  pills or none (never half), plus a status line; a pill tap carries its own
-  position (never "next").
+  pills or none (never half); a pill tap carries its own position (never
+  "next"). 0.1.4 (Prof_Techno, t/11392 #18): no status row for selectors (a
+  number-named position showed as a bare "4" at the right; a long selector's
+  pill is now "name: position"); no widget slot required (slot 1 empty gave
+  the core's "settings.button_1: required").
 - Shapes: a round on/off button, a pull cord or a rotary knob cannot be drawn
   by an external integration (no HTML/CSS; the core renders a fixed
   vocabulary, a `button` is a pill). Answer: icon "power", colour, selector.

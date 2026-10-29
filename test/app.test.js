@@ -753,11 +753,127 @@ test('the widget: up to 4 pills, icon, label, style, confirmation, switch state'
   }
 });
 
+// Prof_Techno's card (t/11392 #18): a selector named "test selecteur" whose
+// positions are numbers showed a row with a bare "4" at the right. No selector
+// has a status row any more; a long one says its position in its pill.
+test('a selector never adds a status row; a long one names its position in its pill', async () => {
+  const t = await setup();
+  const numbers = { kind: 'selector', icon: 'flame' };
+  await t.add({ ...numbers, name: 'test selecteur', positions: '1, 2, 3, 4, 5' });
+  await t.add({ ...numbers, name: 'trois', positions: '1, 2, 3' });
+  await t.add({ ...numbers, name: 'quatre', positions: '1, 2, 3, 4' });
+  await t.add({ ...numbers, name: 'six', positions: 'A, B, C, D, E, F' });
+  await t.add({
+    ...numbers,
+    name: 'Chauffage du salon et de la cuisine',
+    positions: 'Confort, Éco, Hors-gel, Arrêt, Position avec un nom long',
+  });
+  const five = await t.create('test selecteur');
+  const three = await t.create('trois');
+  const four = await t.create('quatre');
+  const six = await t.create('six');
+  const long = await t.create('Chauffage du salon et de la cuisine');
+  const get = async (...devices) => {
+    const settings = Object.fromEntries(devices.map((d, i) => [`button_${i + 1}`, d.external_id]));
+    const ack = await t.gladys.fake.widgetGet(WIDGETS.BUTTONS, { settings });
+    assert.equal(ack.success, true);
+    assert.deepEqual(validateWidgetContent(ack.data.content), []);
+    return ack.data.content.components;
+  };
+  const labels = (components) => components.filter((c) => c.type === 'button').map((p) => p.label);
+  const noRow = (components) =>
+    assert.deepEqual(
+      components.filter((c) => c.type === 'status'),
+      [],
+    );
+
+  // 5 positions, on "4": the pill says which one, nothing at the right.
+  await t.gladys.fake.setValue(five, five.features[0], '4');
+  let components = await get(five);
+  assert.deepEqual(labels(components), ['test selecteur: 4']);
+  noRow(components);
+  // 6 positions, on the first one.
+  components = await get(six);
+  assert.deepEqual(labels(components), ['six: A']);
+  noRow(components);
+  // 2 to 4 positions: one pill per position, the current one marked, no row.
+  await t.gladys.fake.setValue(four, four.features[0], '3');
+  components = await get(three, four);
+  assert.deepEqual(labels(components), ['1', '2', '3']);
+  components = await get(four);
+  assert.deepEqual(labels(components), ['1', '2', '3', '4']);
+  assert.deepEqual(
+    components.filter((c) => c.type === 'button').map((p) => [p.icon, p.style]),
+    [
+      ['flame', 'secondary'],
+      ['flame', 'secondary'],
+      ['check-circle', 'primary'],
+      ['flame', 'secondary'],
+    ],
+  );
+  noRow(components);
+  // Crowded out: still no row, the line says why.
+  components = await get(four, five);
+  assert.deepEqual(labels(components), ['1', '2', '3', '4']);
+  assert.match(components.find((c) => c.variant === 'body').text.fr, /Plus de place/);
+  noRow(components);
+  // Names too long for a pill: bounded, the position kept as far as it can be.
+  await t.gladys.fake.setValue(long, long.features[0], '5');
+  components = await get(long);
+  const [label] = labels(components);
+  assert.ok([...label].length <= LIMITS.widgetLabel, label);
+  assert.match(label, /^Chauffa….*: Po/u);
+  await t.gladys.fake.setValue(long, long.features[0], '2');
+  assert.deepEqual(labels(await get(long)), ['Chauffage du salon…: Éco']);
+});
+
+// Prof_Techno (t/11392 #18): slot 2 filled, slot 1 left empty. No slot is
+// required (the core refuses a missing required setting with "settings.button_1:
+// required"), and the filled slots render in order.
+test('the widget works with any slots filled, slot 1 empty included', async () => {
+  const t = await setup();
+  await t.add({ name: 'Ciné', kind: 'push', icon: 'film' });
+  await t.add({ name: 'Nuit', kind: 'switch', icon: 'moon' });
+  await t.add({ name: 'Porte', kind: 'push' });
+  const cine = await t.create('Ciné');
+  const night = await t.create('Nuit');
+  const door = await t.create('Porte');
+  const labels = async (settings) => {
+    const ack = await t.gladys.fake.widgetGet(WIDGETS.BUTTONS, { settings });
+    assert.equal(ack.success, true);
+    assert.deepEqual(validateWidgetContent(ack.data.content), []);
+    return ack.data.content.components.filter((c) => c.type === 'button').map((p) => p.label);
+  };
+  assert.deepEqual(await labels({ button_2: night.external_id }), ['Nuit']);
+  assert.deepEqual(await labels({ button_4: door.external_id }), ['Porte']);
+  assert.deepEqual(await labels({ button_2: night.external_id, button_4: cine.external_id }), [
+    'Nuit',
+    'Ciné',
+  ]);
+  assert.deepEqual(await labels({ button_3: door.external_id, button_1: cine.external_id }), [
+    'Ciné',
+    'Porte',
+  ]);
+  // The same button in two slots shows once.
+  assert.deepEqual(await labels({ button_2: night.external_id, button_3: night.external_id }), [
+    'Nuit',
+  ]);
+});
+
 test('the widget empty states are valid contents', async () => {
   const t = await setup();
   const empty = await t.gladys.fake.widgetGet(WIDGETS.BUTTONS, { settings: {} });
   assert.deepEqual(validateWidgetContent(empty.data.content), []);
-  assert.match(empty.data.content.components[0].text.fr, /Aucun bouton choisi/);
+  assert.equal(
+    empty.data.content.components[0].text.fr,
+    "Choisis au moins un bouton dans les réglages du widget (ils doivent d'abord être ajoutés à Gladys).",
+  );
+  assert.match(empty.data.content.components[0].text.en, /pick at least one button/);
+  // Empty selects (what a form can send for a slot left blank) are no choice.
+  const blank = await t.gladys.fake.widgetGet(WIDGETS.BUTTONS, {
+    settings: { button_1: '', button_2: '' },
+  });
+  assert.match(blank.data.content.components[0].text.fr, /Choisis au moins un bouton/);
   const gone = await t.gladys.fake.widgetGet(WIDGETS.BUTTONS, {
     settings: { button_1: 'ext:test-integration:button:b0123456789ab' },
   });
@@ -1077,10 +1193,11 @@ test('a selector in the widget: one pill per position, the current one marked', 
     pills.map((p) => p.action.key),
     ['press_1', 'press_2', 'press_3', 'press_4'],
   );
-  const [status] = components.filter((c) => c.type === 'status');
-  assert.deepEqual(status.items, [
-    { label: 'Chauffage', value: 'Éco', icon: 'flame', color: 'neutral' },
-  ]);
+  // The pills say the position: no row repeats it (no bare value at the right).
+  assert.deepEqual(
+    components.filter((c) => c.type === 'status'),
+    [],
+  );
   // A tap sets the position of its pill; the current one says "already".
   let tap = await t.gladys.fake.widgetAction(WIDGETS.BUTTONS, 'press_4', pills[3].action.params);
   assert.match(tap.data.message.fr, /« Chauffage » : Arrêt\./);
@@ -1109,11 +1226,8 @@ test('a selector in the widget: one pill per position, the current one marked', 
   const note = components.find((c) => c.type === 'text' && c.variant === 'body');
   assert.match(note.text.fr, /Plus de place sur cette carte pour : Chauffage\./);
   assert.deepEqual(
-    components.find((c) => c.type === 'status').items.map((i) => [i.label, i.value]),
-    [
-      ['Chauffage', 'Arrêt'],
-      ['Volets', 'Ouverts'],
-    ],
+    components.filter((c) => c.type === 'status'),
+    [],
   );
 });
 
@@ -1380,7 +1494,7 @@ test('a selector of 6 positions in the widget: one pill that opens the list', as
   const [pill] = pills;
   assert.deepEqual(
     [pill.label, pill.icon, pill.style, pill.action.key, pill.action.confirm, pill.action.params],
-    ['Fil pilote', 'heater', 'primary', 'press_1', true, { id }],
+    ['Fil pilote: Confort -1', 'heater', 'primary', 'press_1', true, { id }],
   );
   assert.deepEqual(pill.action.fields, [
     {
@@ -1395,9 +1509,12 @@ test('a selector of 6 positions in the widget: one pill that opens the list', as
       default: '2',
     },
   ]);
-  assert.deepEqual(components.find((c) => c.type === 'status').items, [
-    { label: 'Fil pilote', value: 'Confort -1', icon: 'heater', color: 'primary' },
-  ]);
+  // The pill names the current position, no other row does.
+  assert.equal(pill.label, 'Fil pilote: Confort -1');
+  assert.deepEqual(
+    components.filter((c) => c.type === 'status'),
+    [],
+  );
 
   // The position chosen in the list, as the core relays it.
   const tap = (values, params = pill.action.params) =>
@@ -1436,7 +1553,7 @@ test('a selector of 6 positions in the widget: one pill that opens the list', as
     pills.map((p) => [p.label, p.action.key, Boolean(p.action.fields)]),
     [
       ['Ciné', 'press_1', false],
-      ['Fil pilote', 'press_2', true],
+      ['Fil pilote: Hors-gel', 'press_2', true],
       ['Nuit', 'press_3', false],
     ],
   );
@@ -1461,6 +1578,6 @@ test('a selector of 6 positions in the widget: one pill that opens the list', as
   });
   assert.deepEqual(
     components.filter((c) => c.type === 'button').map((p) => p.label),
-    ['Ciné', 'Nuit', 'Porte', 'Fil pilote'],
+    ['Ciné', 'Nuit', 'Porte', 'Fil pilote: Hors-gel'],
   );
 });

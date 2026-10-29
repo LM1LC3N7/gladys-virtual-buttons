@@ -133,7 +133,10 @@ it**. The integration protects itself:
 
 1. Open your **dashboard**, switch to edit mode, add a box and choose the
    **Buttons** widget (of the Virtual buttons integration).
-2. In its settings, choose **1 to 4 buttons** (Button 1 to Button 4). Only the
+2. In its settings, choose **1 to 4 buttons** (Button 1 to Button 4). No slot
+   is mandatory: you can fill Button 2 and leave Button 1 empty, and the widget
+   shows the chosen buttons in the order of the slots. With none chosen, it
+   says "Pick at least one button in the settings of this widget". Only the
    buttons added to Gladys at step 2 are listed.
 3. The widget shows one pill per button, with the chosen icon, name and
    colour:
@@ -145,16 +148,16 @@ it**. The integration protects itself:
      says "already off" or "already on");
    - for a **timed switch** that is on, a line shows the time left
      ("Heating: 25 min left");
-   - a **selector** takes one pill per position, and a line at the top gives
-     its name and its current position ("Heating — Eco"). The current
-     position stands out: its colour and a tick, the others grey. A press puts
+   - a **selector** takes one pill per position, The current
+     position stands out: its colour and a tick, the others grey (no line
+     repeats it). A press puts
      the selector on the position of the pill (the message says "already on
      Eco" when it was). A card holds 4 pills at most: a selector of 4
      positions takes a card of its own. A selector that has no room left for
-     all its positions shows none (never half of them): its line stays, and a
-     message says to show it on another card;
-   - a **selector of 5 or 6 positions** takes a single pill, with its icon and
-     name. A press opens a list of its positions, the current one already
+     all its positions shows none (never half of them): a message says to show it on another
+     card;
+   - a **selector of 5 or 6 positions** takes a single pill, with its icon, its
+     name and its current position ("Heating: Eco"). A press opens a list of its positions, the current one already
      chosen: pick one and confirm. This list needs a recent Gladys (the
      version where a widget button can open a small form); with an older one
      the press does nothing and the message asks to update Gladys. The

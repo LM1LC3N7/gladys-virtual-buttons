@@ -1,10 +1,11 @@
 // -----------------------------------------------------------------------------
 // The dashboard widgets, pure. "Buttons": up to 4 pills, each with the icon,
 // label and style of its button; a selector of up to 4 positions takes one
-// pill per position, the current one marked (its colour and a tick), and a
-// status line names it with its current position. A selector of 5 or 6
-// positions takes one pill that opens the list of its positions (a widget
-// action form: the core holds 4 buttons a content). "Icons": one page of the
+// pill per position, the current one marked (its colour and a tick), with no
+// other row repeating it. A selector of 5 or 6 positions takes one pill
+// that opens the list of its positions (a widget action form: the core holds
+// 4 buttons a content) and whose label says the current position.
+// "Icons": one page of the
 // icons the forms offer.
 //
 // Every pill carries a widget action (never device_feature + value): only an
@@ -47,8 +48,27 @@ export function styleOf(button) {
 /** The style of a pill that is "on": the chosen one, primary when grey was chosen. */
 const lit = (button) => (button.style === 'secondary' ? 'primary' : button.style);
 
-/** The dot of a status line, from the chosen style. */
-const COLORS = Object.freeze({ primary: 'primary', secondary: 'neutral', danger: 'danger' });
+/**
+ * The label of the pill of a long selector: its name and its current position
+ * ("Heating: Eco"), within the label bound. The pill is the only place that
+ * says the position (a short selector marks it with its pills), so the
+ * position is kept whole when it fits and the name gives way first.
+ */
+function listLabel(button) {
+  const position = button.positions[button.state - 1] ?? '';
+  const max = LIMITS.widgetLabel;
+  const name = [...button.name];
+  if (!position) {
+    return button.name;
+  }
+  const room = max - 2 - [...position].length;
+  if (name.length <= room) {
+    return `${button.name}: ${position}`;
+  }
+  // Keep at least 8 characters of the name; the position takes the rest.
+  const shown = cut(button.name, Math.max(8, room));
+  return `${shown}: ${cut(position, max - 2 - [...shown].length)}`;
+}
 
 /** A body-only content: the empty states. */
 export function messageWidget(text) {
@@ -76,19 +96,6 @@ export function buttonsWidget(buttons, now) {
       variant: 'caption',
     });
   }
-  const selectors = buttons.filter((b) => b.kind === KINDS.SELECTOR);
-  if (selectors.length > 0) {
-    // One status list per content: a line per selector, its current position.
-    components.push({
-      type: 'status',
-      items: selectors.slice(0, 10).map((b) => ({
-        label: cut(b.name, 40),
-        value: cut(b.positions[b.state - 1] ?? '', 40),
-        icon: b.icon,
-        color: COLORS[b.style] ?? 'primary',
-      })),
-    });
-  }
   // At most 4 pills in a content (the core budget). A selector of up to 4
   // positions needs one per position: when they do not all fit, it gets none
   // (never half a selector), and a line says to show it on a card of its own.
@@ -101,7 +108,13 @@ export function buttonsWidget(buttons, now) {
         crowded.push(cut(button.name, 24));
         continue;
       }
-      pills.push({ button, label: button.name, icon: button.icon, style: lit(button), list: true });
+      pills.push({
+        button,
+        label: listLabel(button),
+        icon: button.icon,
+        style: lit(button),
+        list: true,
+      });
       continue;
     }
     if (button.kind === KINDS.SELECTOR) {

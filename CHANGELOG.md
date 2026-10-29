@@ -10,6 +10,18 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Fixed
+
+- Widget: a selector no longer adds a status row (its position showed as a
+  bare number at the right, e.g. "4"). Up to 4 positions, the pills already
+  show the current one; a selector of 5 or 6 positions now says its position in
+  its pill ("Heating: Eco").
+- Widget: no button slot is required any more. Filling Button 2 and leaving
+  Button 1 empty gave the core's error "settings.button_1: required"; the
+  filled slots now show in order, and a widget with none chosen says "Pick at
+  least one button in the settings of this widget". Existing widgets are
+  unchanged.
+
 ## [0.1.3] - 2026-10-29
 
 ### Changed

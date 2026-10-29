@@ -1150,7 +1150,7 @@
             "en": "Button 1",
             "fr": "Bouton 1"
           },
-          "required": true
+          "required": false
         },
         {
           "key": "button_2",

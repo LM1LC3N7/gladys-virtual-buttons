@@ -274,8 +274,8 @@ export const T = Object.freeze({
   widget: {
     title: both('Buttons', 'Boutons'),
     empty: both(
-      'No button chosen. Edit this card and pick up to 4 buttons (they must be added to Gladys first).',
-      "Aucun bouton choisi. Modifiez cette carte et choisissez jusqu'à 4 boutons (ils doivent d'abord être ajoutés à Gladys).",
+      'No button chosen: pick at least one button in the settings of this widget (they must be added to Gladys first).',
+      "Choisis au moins un bouton dans les réglages du widget (ils doivent d'abord être ajoutés à Gladys).",
     ),
     gone: both(
       'The buttons of this card were removed from the integration: edit the card.',

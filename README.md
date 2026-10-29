@@ -62,13 +62,13 @@ Gladys ⇄ SDK ⇄ src/handlers.js ⇄ src/app.js (ButtonsApp)
   changed; the same changes for another button right after must be asked
   twice. "Remove a button" needs the name typed, turns a switch that is on off
   first and waits for Gladys to take the 0.
-- **Widget** "Buttons" (Gladys 5.1.0+): four settings `button_1` …
-  `button_4`, one pill each (widget action `press_<n>`, params
+- **Widget** "Buttons" (Gladys 5.1.0+): four optional settings `button_1` …
+  `button_4` (none required, filled slots shown in order, a message when none), one pill each (widget action `press_<n>`, params
   `{ id, value }`: the value the card showed, never a toggle; a confirmation
   can be asked); a switch that is on shows its colour; a selector takes one
-  pill per position (the current one in colour with a tick) and a status line,
-  never half of its pills; a selector of 5 or 6 positions takes one pill whose
-  action opens a form with a `select` of its positions (widget action
+  pill per position (the current one in colour with a tick; no status row), never
+  half of its pills; a selector of 5 or 6 positions takes one pill labelled
+  "name: current position", whose action opens a form with a `select` of its positions (widget action
   `fields`, params `{ id }`, the choice in `values.position` as `"1"` …
   `"6"`; no `values`, from a core without action forms: refused, nothing
   changed).

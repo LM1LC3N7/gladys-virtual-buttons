@@ -219,6 +219,13 @@ test('the widgets: keys, slots, handlers', () => {
     [...WIDGET_SLOTS],
   );
   assert.ok(widget.settings.every((s) => s.type === 'select' && s.source === 'devices'));
+  // No slot is required: the core refuses a widget whose required setting is
+  // missing ("settings.button_1: required", validateWidgetSettings.js), and a
+  // user may fill slot 2 only. The empty card says so (app.test.js).
+  for (const setting of widget.settings) {
+    assert.equal(setting.required, false, setting.key);
+    assert.equal(setting.default, undefined, setting.key);
+  }
   for (const lang of ['en', 'fr']) {
     assert.ok(widget.label[lang].length >= 3 && widget.label[lang].length <= 30);
     assert.ok(widget.description[lang].length <= 100);

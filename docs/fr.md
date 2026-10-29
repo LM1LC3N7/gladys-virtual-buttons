@@ -141,7 +141,11 @@ déclenchée**. L'intégration s'en protège :
 1. Ouvrez votre **tableau de bord**, passez en mode édition, ajoutez une boîte
    et choisissez le widget **Boutons** (de l'intégration Boutons virtuels).
 2. Dans ses réglages, choisissez de **1 à 4 boutons** (Bouton 1 à Bouton 4).
-   Seuls les boutons ajoutés à Gladys à l'étape 2 sont proposés.
+   Aucun emplacement n'est obligatoire : vous pouvez remplir le Bouton 2 et
+   laisser le Bouton 1 vide, le widget affiche les boutons choisis dans
+   l'ordre des emplacements. Si vous n'en choisissez aucun, il dit « Choisis
+   au moins un bouton dans les réglages du widget ». Seuls les boutons ajoutés
+   à Gladys à l'étape 2 sont proposés.
 3. Le widget affiche une pastille par bouton, avec l'icône, le nom et la
    couleur choisis :
    - un appui sur un **bouton poussoir** envoie une impulsion ; le message
@@ -153,17 +157,16 @@ déclenchée**. L'intégration s'en protège :
      marche ») ;
    - pour un **interrupteur temporisé** allumé, une ligne indique le temps
      restant (« Chauffage : encore 25 min ») ;
-   - un **sélecteur** prend une pastille par position, et une ligne en haut
-     donne son nom et sa position actuelle (« Chauffage — Éco »). La position
-     actuelle est mise en avant : sa couleur et une coche, les autres en gris.
+   - un **sélecteur** prend une pastille par position, La position
+     actuelle est mise en avant : sa couleur et une coche, les autres en gris
+     (aucune ligne ne la répète).
      Un appui met le sélecteur sur la position de la pastille (le message dit
      « déjà sur Éco » si c'était déjà le cas). Une carte a 4 pastilles au
      plus : un sélecteur de 4 positions prend une carte à lui. Un sélecteur
      qui n'a plus la place pour toutes ses positions n'en affiche aucune
-     (jamais la moitié) : sa ligne reste, et un message dit de l'afficher sur
-     une autre carte ;
+     (jamais la moitié) : un message dit de l'afficher sur une autre carte ;
    - un **sélecteur de 5 ou 6 positions** prend une seule pastille, avec son
-     icône et son nom. Un appui ouvre la liste de ses positions, l'actuelle
+     icône, son nom et sa position actuelle (« Chauffage : Éco »). Un appui ouvre la liste de ses positions, l'actuelle
      déjà choisie : choisissez-en une et validez. Cette liste demande un
      Gladys récent (la version où un bouton de widget peut ouvrir un petit
      formulaire) ; avec un plus ancien, l'appui ne change rien et le message
