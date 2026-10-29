@@ -231,3 +231,13 @@ Minors from `_lots/hors-lot/virtual-buttons-r2.md`, none blocking:
 7. The "no room left" line text changed for existing selectors: say so in the CHANGELOG.
 8. No action.
 9. The form default can be up to 30 s stale.
+
+## Next patch (review r3, 1c3ec75)
+
+Minors from `_lots/hors-lot/virtual-buttons-r3.md`:
+
+1. Docs: name the widget box, since a 2–4 position selector's name no longer shows.
+2. Labels cut by code points while the core cuts by UTF-16 length: an emoji-heavy label can end with half an emoji (since 0.1.0).
+3. French empty-card text says "Choisis"; the rest of the module says "Choisissez".
+4. Typos in the docs; the English docs misquote the empty-card message.
+5. `listLabel`'s own position cut is redundant with the final cut.
