@@ -853,6 +853,12 @@ export class ButtonsApp {
         // scenes at other names without a word.
         throw new ButtonError('positionsMoved');
       }
+      if (!isSwitchKind(button.kind)) {
+        // A push button and a selector have no state light: its colours
+        // would change nothing on the card.
+        delete values.on_color;
+        delete values.off_color;
+      }
       if (Object.keys(values).length === 0) {
         throw new ButtonError('nothingToChange');
       }

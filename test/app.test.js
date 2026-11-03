@@ -736,8 +736,10 @@ test('the widget: up to 4 pills, icon, label, style, confirmation, switch state'
   assert.deepEqual(validateWidgetContent(content), []);
   pills = content.components.filter((c) => c.type === 'button');
   assert.equal(pills[0].style, 'primary', 'a switch that is on is tinted');
-  const caption = content.components.find((c) => c.type === 'text');
-  assert.match(caption.text.fr, /encore 20 min/);
+  // The time left is in the status row, no caption repeats the name (r1).
+  assert.equal(content.components.filter((c) => c.type === 'text').length, 0);
+  const row = content.components.find((c) => c.type === 'status').items[0];
+  assert.deepEqual([row.value.en, row.value.fr], ['On · 20 min', 'Marche · 20 min']);
   assert.equal(content.ttl_seconds, 15);
 
   const off = await tap(pills[0]);
@@ -825,7 +827,7 @@ test('the state light of a switch: colours, words, tick, defaults, edit', async 
   shown = await get();
   assert.deepEqual(shown.rows, [
     ['Nuit', 'On', 'Marche', 'moon', 'success'],
-    ['Tempo', 'On', 'Marche', 'timer', 'warning'],
+    ['Tempo', 'On · 10 min', 'Marche · 10 min', 'timer', 'warning'],
   ]);
   // On: filled (primary when grey was chosen) and the tick, not colour alone.
   assert.deepEqual(shown.pills, [
@@ -855,6 +857,31 @@ test('the state light of a switch: colours, words, tick, defaults, edit', async 
   });
   assert.equal(refused.success, false);
   assert.match(refused.error, /couleur n'est pas dans la liste|colour is not in the list/);
+
+  // A push button and a selector have no light: their colours are ignored
+  // (r1 point 2), alone they are "nothing to change".
+  for (const device of [gate, mode]) {
+    for (const colour of [{ on_color: 'warning' }, { off_color: 'info' }]) {
+      const ignored = await t.gladys.fake.action(ACTIONS.EDIT, {
+        ...EDIT_FORM,
+        button: device.external_id,
+        ...colour,
+      });
+      assert.equal(ignored.success, false, device.name);
+      assert.match(ignored.error, /Rien à modifier|Nothing to change/);
+    }
+  }
+  const renamed = await t.gladys.fake.action(ACTIONS.EDIT, {
+    ...EDIT_FORM,
+    button: gate.external_id,
+    name: 'Portail avant',
+    on_color: 'warning',
+  });
+  assert.equal(renamed.success, true);
+  assert.match(renamed.data.message.fr, /voyant en marche : inchangé/);
+  assert.match(renamed.data.message.en, /light when on: unchanged/);
+  const saved = t.store.data.buttons.find((b) => b.name === 'Portail avant');
+  assert.equal(saved.on_color, undefined);
 });
 
 // A button saved before the state light (no colour in /data nor in its

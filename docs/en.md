@@ -43,7 +43,9 @@ button is the remote, the scene does the work.
    - **State light when on (switch)** and **State light when off
      (switch)**: the colour of the light of a switch or a timed switch in the
      widget: green, blue, light blue, orange, red or grey. By default: green
-     when on, grey when off. No effect on a push button or a selector;
+     when on, grey when off. Light blue and orange are the palest on the
+     light theme: prefer green, blue, red or grey. No effect on a push button
+     or a selector ("Change a button" ignores them there);
    - **Ask for confirmation before pressing (widget)**: yes or no.
 3. Confirm. Under the button, the message says: `Button "Heating" added. Now
 open the Discovery tab…`.
@@ -157,11 +159,11 @@ it**. The integration protects itself:
      its icon. A press does what the pill shows: turn off a pill that is on,
      turn on a pill that is off (if the state changed meanwhile, the message
      says "already off" or "already on");
-   - for a **timed switch** that is on, a line shows the time left
-     ("Heating: 25 min left"). Its pill takes the colour chosen for the
+   - for a **timed switch** that is on, its state light also gives the time
+     left ("On · 25 min"). Its pill takes the colour chosen for the
      button: it is red only if you chose "Danger (red)". For another look,
      change the colour of the button or of its light with "Change a button";
-   - a **selector** takes one pill per position, The current
+   - a **selector** takes one pill per position. The current
      position stands out: its colour and a tick, the others grey (no line
      repeats it). A press puts
      the selector on the position of the pill (the message says "already on

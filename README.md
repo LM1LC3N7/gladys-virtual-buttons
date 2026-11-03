@@ -68,7 +68,8 @@ Gladys ⇄ SDK ⇄ src/handlers.js ⇄ src/app.js (ButtonsApp)
   can be asked); a switch that is on shows its colour, filled, with the
   `check-circle` tick in place of its icon; each switch or timed switch shown
   also gets a row in one `status` list (its icon in the colour chosen for on
-  or off, its name, "On"/"Off" in words): `VB_ON_COLOR` / `VB_OFF_COLOR`,
+  or off, its name, "On"/"Off" in words, "On · 25 min" for a timed switch
+  that is on, no separate caption): `VB_ON_COLOR` / `VB_OFF_COLOR`,
   one of the core `WIDGET_COLORS` (default `success` / `neutral`, written in
   the params only when not the default, so old devices are unchanged); a
   pill has only the three button styles (no green: the core keeps the green

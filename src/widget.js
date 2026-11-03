@@ -53,6 +53,8 @@ export function styleOf(button) {
   return lit(button);
 }
 
+const cut2 = (text, max) => ({ en: cut(text.en, max), fr: cut(text.fr, max) });
+
 /** The icon a pill shows: a switch that is on takes the tick, like the current position of a selector. */
 export function iconOf(button) {
   return button.kind !== KINDS.PUSH && button.state === 1 ? CURRENT_ICON : button.icon;
@@ -62,20 +64,33 @@ export function iconOf(button) {
  * The state light of a switch or a timed switch (a status row), or null for
  * a push button (no state) and a selector (its pills mark the current
  * position; a row repeating it read as a stray value, t/11392 #18). Old
- * buttons without colours have the defaults (sanitizeButton).
+ * buttons without colours have the defaults (sanitizeButton). A timed switch
+ * that is on says its time left in the same value ("On · 25 min"), so the
+ * name is not repeated in a caption (r1 of t/11392 #20); `now` is the clock
+ * reading of the content.
  */
-export function lightOf(button) {
+export function lightOf(button, now) {
   if (!isSwitchKind(button.kind)) {
     return null;
   }
   const on = button.state === 1;
   const colors = colorsOf(button);
+  const left = on && button.kind === KINDS.TIMED ? minutesLeft(button, now) : null;
+  const value = on ? (left === null ? T.widget.on : T.widget.onFor(left)) : T.widget.off;
   return {
     label: cut(button.name, LIMITS.statusLabel),
-    value: on ? T.widget.on : T.widget.off,
+    value: cut2(value, LIMITS.statusValue),
     icon: button.icon,
     color: on ? colors.on : colors.off,
   };
+}
+
+/** Whole minutes left of a timed switch that is on (at least 1), or null without a valid end. */
+function minutesLeft(button, now) {
+  if (!Number.isFinite(button.until) || !Number.isFinite(now)) {
+    return null;
+  }
+  return Math.max(1, Math.ceil((button.until - now) / 60000));
 }
 
 /** The style of a pill that is "on": the chosen one, primary when grey was chosen. */
@@ -111,24 +126,16 @@ export function messageWidget(text) {
   };
 }
 
-const cut2 = (text, max) => ({ en: cut(text.en, max), fr: cut(text.fr, max) });
-
 /**
  * The content for the buttons shown (already resolved and deduplicated, at
  * most 4), `now` for the time left of the timed switches.
  */
 export function buttonsWidget(buttons, now) {
   const components = [];
-  const running = buttons
-    .filter((b) => b.kind === KINDS.TIMED && b.state === 1 && Number.isFinite(b.until))
-    .map((b) => [cut(b.name, 20), Math.max(1, Math.ceil((b.until - now) / 60000))]);
-  if (running.length > 0) {
-    components.push({
-      type: 'text',
-      text: cut2(T.widget.remaining(running), 80),
-      variant: 'caption',
-    });
-  }
+  // The time left of a timed switch that is on is in its status row.
+  const running = buttons.filter(
+    (b) => b.kind === KINDS.TIMED && b.state === 1 && Number.isFinite(b.until),
+  );
   // At most 4 pills in a content (the core budget). A selector of up to 4
   // positions needs one per position: when they do not all fit, it gets none
   // (never half a selector), and a line says to show it on a card of its own.
@@ -188,7 +195,7 @@ export function buttonsWidget(buttons, now) {
   }
   // One status list (the core budget), at most 4 rows: the switches shown,
   // crowded ones included.
-  const lights = buttons.map(lightOf).filter(Boolean);
+  const lights = buttons.map((b) => lightOf(b, now)).filter(Boolean);
   if (lights.length > 0) {
     components.push({ type: 'status', items: lights });
   }

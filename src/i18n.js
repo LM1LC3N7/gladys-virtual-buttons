@@ -307,10 +307,7 @@ export const T = Object.freeze({
         `Page ${page} of ${pages}: icons ${from} to ${to} of ${total}, in the order of the "Icon" list of the forms.`,
         `Page ${page} sur ${pages} : icônes ${from} à ${to} sur ${total}, dans l'ordre de la liste « Icône » des formulaires.`,
       ),
-    remaining: (items) =>
-      both(
-        items.map(([name, minutes]) => `${name}: ${minutes} min left`).join(' · '),
-        items.map(([name, minutes]) => `${name} : encore ${minutes} min`).join(' · '),
-      ),
+    // The value of the status row of a timed switch that is on: ≤ 40 characters.
+    onFor: (minutes) => both(`On · ${minutes} min`, `Marche · ${minutes} min`),
   },
 });

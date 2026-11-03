@@ -45,7 +45,9 @@ change. Le bouton est la télécommande, la scène fait le travail.
      (interrupteur)** : la couleur du voyant d'un interrupteur ou d'un
      interrupteur temporisé dans le widget, au choix parmi vert, bleu, bleu
      clair, orange, rouge et gris. Par défaut : vert en marche, gris à
-     l'arrêt. Sans effet pour un bouton poussoir ou un sélecteur ;
+     l'arrêt. Bleu clair et orange sont les plus pâles sur le thème clair :
+     préférez vert, bleu, rouge ou gris. Sans effet pour un bouton poussoir
+     ou un sélecteur (« Modifier un bouton » les ignore alors) ;
    - **Demander une confirmation avant l'appui (widget)** : oui ou non.
 3. Validez. Sous le bouton, le message dit : « Bouton « Chauffage » ajouté.
    Ouvrez maintenant l'onglet Découverte… ».
@@ -167,12 +169,12 @@ déclenchée**. L'intégration s'en protège :
      éteindre une pastille allumée, allumer une pastille éteinte (si l'état a
      changé entre-temps, le message dit « déjà à l'arrêt » ou « déjà en
      marche ») ;
-   - pour un **interrupteur temporisé** allumé, une ligne indique le temps
-     restant (« Chauffage : encore 25 min »). Sa pastille prend la couleur
+   - pour un **interrupteur temporisé** allumé, son voyant donne aussi le
+     temps restant (« Marche · 25 min »). Sa pastille prend la couleur
      choisie pour le bouton : elle est rouge seulement si vous avez choisi
      « Danger (rouge) ». Pour un autre rendu, changez la couleur du bouton ou
      celle de son voyant avec « Modifier un bouton » ;
-   - un **sélecteur** prend une pastille par position, La position
+   - un **sélecteur** prend une pastille par position. La position
      actuelle est mise en avant : sa couleur et une coche, les autres en gris
      (aucune ligne ne la répète).
      Un appui met le sélecteur sur la position de la pastille (le message dit

@@ -2,7 +2,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { WIDGET_COLORS } from '@gladysassistant/integration-sdk';
+import { WIDGET_COLORS, validateWidgetContent } from '@gladysassistant/integration-sdk';
 import { createFakeGladys } from '@gladysassistant/integration-sdk/testing';
 import {
   buttonFromDevice,
@@ -20,7 +20,7 @@ import {
 } from '../src/buttons.js';
 import { COLORS, DEFAULTS } from '../src/constants.js';
 import { sanitize } from '../src/store.js';
-import { iconOf, lightOf, styleOf } from '../src/widget.js';
+import { buttonsWidget, iconOf, lightOf, styleOf } from '../src/widget.js';
 
 test('cleanName: text only, collapsed, bounded by code points', () => {
   assert.equal(cleanName('  a\tb\u0000c  '), 'a b c');
@@ -99,6 +99,43 @@ test('the state light and the pill of each kind', () => {
   assert.equal(iconOf({ ...base, kind: 'switch', state: 1 }), 'check-circle');
   assert.equal(iconOf({ ...base, kind: 'switch', state: 0 }), 'moon');
   assert.equal(iconOf({ ...base, kind: 'push', state: 1 }), 'moon');
+  // A timed switch that is on gives its time left in the same value.
+  const timed = lightOf({ ...base, kind: 'timed', state: 1, until: 25 * 60000 - 1 }, 0);
+  assert.deepEqual([timed.value.en, timed.value.fr], ['On · 25 min', 'Marche · 25 min']);
+  // Under a minute left still says 1 min; no valid end, no time.
+  assert.equal(lightOf({ ...base, kind: 'timed', state: 1, until: 5 }, 0).value.en, 'On · 1 min');
+  assert.equal(lightOf({ ...base, kind: 'timed', state: 1, until: null }, 0).value.en, 'On');
+  assert.equal(lightOf({ ...base, kind: 'timed', state: 0, until: 60000 }, 0).value.en, 'Off');
+});
+
+// r1 of t/11392 #20: 4 timed switches on with long names. No caption repeats
+// the names (it was cut at 80 characters, losing the 3rd and 4th timers):
+// each row says its own time, the content stays valid.
+test('4 timed switches on with 60-character names: every time left shown', () => {
+  const now = 1_000_000;
+  const buttons = [1, 2, 3, 4].map((n) => ({
+    id: `b00000000000${n}`,
+    name: `${n}`.repeat(60),
+    kind: 'timed',
+    icon: 'timer',
+    style: 'danger',
+    confirm: true,
+    minutes: 1440,
+    state: 1,
+    until: now + n * 1440 * 60000,
+    on_color: 'warning',
+    off_color: 'danger',
+  }));
+  const content = buttonsWidget(buttons, now);
+  assert.deepEqual(validateWidgetContent(content), []);
+  assert.equal(content.components.filter((c) => c.type === 'text').length, 0);
+  const rows = content.components.find((c) => c.type === 'status').items;
+  assert.deepEqual(
+    rows.map((r) => [[...r.label].length, r.value.en, r.value.fr]),
+    [1, 2, 3, 4].map((n) => [40, `On · ${n * 1440} min`, `Marche · ${n * 1440} min`]),
+  );
+  assert.equal(content.components.filter((c) => c.type === 'button').length, 4);
+  assert.equal(content.ttl_seconds, 15);
 });
 
 test('a device and back: the params rebuild the button', () => {
