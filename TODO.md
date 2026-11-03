@@ -253,3 +253,8 @@ Minors from `_lots/hors-lot/virtual-buttons-r3.md`:
 3. French empty-card text says "Choisis"; the rest of the module says "Choisissez".
 4. Typos in the docs; the English docs misquote the empty-card message.
 5. `listLabel`'s own position cut is redundant with the final cut.
+
+## Next patch (review virtual-buttons-015-r2, minors)
+
+- [ ] Test `Math.max(1, …)` in `minutesLeft` (src/widget.js): `until <= now` must show "On · 1 min", not a negative number (mutant survives).
+- [ ] Optional: "Add a button" stores the light colours for a push button or a selector, where they have no effect (harmless: unused `VB_ON_COLOR` / `VB_OFF_COLOR` params).
