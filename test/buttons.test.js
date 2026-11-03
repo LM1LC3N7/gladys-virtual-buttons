@@ -2,10 +2,12 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { WIDGET_COLORS } from '@gladysassistant/integration-sdk';
 import { createFakeGladys } from '@gladysassistant/integration-sdk/testing';
 import {
   buttonFromDevice,
   cleanName,
+  colorsOf,
   deviceOf,
   idOfDevice,
   nameKey,
@@ -16,8 +18,9 @@ import {
   toMinutes,
   wireOf,
 } from '../src/buttons.js';
+import { COLORS, DEFAULTS } from '../src/constants.js';
 import { sanitize } from '../src/store.js';
-import { styleOf } from '../src/widget.js';
+import { iconOf, lightOf, styleOf } from '../src/widget.js';
 
 test('cleanName: text only, collapsed, bounded by code points', () => {
   assert.equal(cleanName('  a\tb\u0000c  '), 'a b c');
@@ -44,6 +47,58 @@ test('toMinutes and readFields', () => {
   });
   assert.deepEqual(readFields({ icon: 'sun' }, { partial: true }).values, { icon: 'sun' });
   assert.equal(readFields({ name: 'A', kind: 'constructor' }).error, 'kindUnknown');
+});
+
+test('the colours of the state light: checked, optional, kept in the device', () => {
+  // Only the semantic colours of the core; a colour left out stays absent.
+  assert.equal(readFields({ name: 'A', on_color: 'green' }).error, 'colorUnknown');
+  assert.equal(readFields({ name: 'A', off_color: '#00ff00' }).error, 'colorUnknown');
+  assert.equal(readFields({ name: 'A', on_color: 'constructor' }).error, 'colorUnknown');
+  assert.deepEqual(
+    readFields({ on_color: 'warning', off_color: 'keep' }, { partial: true }).values,
+    { on_color: 'warning' },
+  );
+  const added = readFields({ name: 'A', kind: 'switch', on_color: 'info', off_color: 'danger' });
+  assert.equal(added.values.on_color, 'info');
+  assert.equal(added.values.off_color, 'danger');
+  // /data: a valid colour kept, anything else dropped (the default shows).
+  const raw = { id: 'b0123456789ab', name: 'A', kind: 'switch' };
+  const kept = sanitizeButton({ ...raw, on_color: 'danger', off_color: 'success' });
+  assert.deepEqual([kept.on_color, kept.off_color], ['danger', 'success']);
+  const dropped = sanitizeButton({ ...raw, on_color: 'pink', off_color: { x: 1 } });
+  assert.equal(Object.hasOwn(dropped, 'on_color'), false);
+  assert.equal(Object.hasOwn(dropped, 'off_color'), false);
+  assert.deepEqual(colorsOf(dropped), { on: 'success', off: 'neutral' });
+  assert.deepEqual(colorsOf(kept), { on: 'danger', off: 'success' });
+  // Every colour offered is a semantic colour of the core widgets.
+  assert.deepEqual([...COLORS].sort(), Object.values(WIDGET_COLORS).sort());
+  assert.ok(COLORS.includes(DEFAULTS.on_color) && COLORS.includes(DEFAULTS.off_color));
+  // The device carries a colour that is not the default, and gives it back.
+  const gladys = createFakeGladys();
+  const device = deviceOf(gladys, kept);
+  const params = Object.fromEntries(device.params.map((p) => [p.name, p.value]));
+  assert.deepEqual([params.VB_ON_COLOR, params.VB_OFF_COLOR], ['danger', 'success']);
+  const back = buttonFromDevice(gladys, device);
+  assert.deepEqual([back.on_color, back.off_color], ['danger', 'success']);
+  // A hand-edited param out of the list: the default.
+  const forged = {
+    ...device,
+    params: device.params.map((p) => (p.name === 'VB_ON_COLOR' ? { ...p, value: 'red' } : p)),
+  };
+  assert.equal(colorsOf(buttonFromDevice(gladys, forged)).on, 'success');
+});
+
+test('the state light and the pill of each kind', () => {
+  const base = { name: 'A', icon: 'moon', style: 'secondary', positions: ['X', 'Y'] };
+  assert.equal(lightOf({ ...base, kind: 'push', state: 0 }), null);
+  assert.equal(lightOf({ ...base, kind: 'selector', state: 1 }), null);
+  const off = lightOf({ ...base, kind: 'switch', state: 0 });
+  assert.deepEqual([off.value.fr, off.icon, off.color], ['Arrêt', 'moon', 'neutral']);
+  const on = lightOf({ ...base, kind: 'timed', state: 1, on_color: 'primary' });
+  assert.deepEqual([on.value.en, on.color], ['On', 'primary']);
+  assert.equal(iconOf({ ...base, kind: 'switch', state: 1 }), 'check-circle');
+  assert.equal(iconOf({ ...base, kind: 'switch', state: 0 }), 'moon');
+  assert.equal(iconOf({ ...base, kind: 'push', state: 1 }), 'moon');
 });
 
 test('a device and back: the params rebuild the button', () => {

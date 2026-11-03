@@ -520,8 +520,8 @@
           "key": "style",
           "type": "select",
           "label": {
-            "en": "Colour in the widget",
-            "fr": "Couleur dans le widget"
+            "en": "Colour of the button (widget)",
+            "fr": "Couleur du bouton (widget)"
           },
           "required": false,
           "default": "primary",
@@ -545,6 +545,114 @@
               "label": {
                 "en": "Danger (red)",
                 "fr": "Danger (rouge)"
+              }
+            }
+          ]
+        },
+        {
+          "key": "on_color",
+          "type": "select",
+          "label": {
+            "en": "State light when on (switch)",
+            "fr": "Voyant en marche (interrupteur)"
+          },
+          "required": false,
+          "default": "success",
+          "options": [
+            {
+              "value": "success",
+              "label": {
+                "en": "Green",
+                "fr": "Vert"
+              }
+            },
+            {
+              "value": "primary",
+              "label": {
+                "en": "Blue",
+                "fr": "Bleu"
+              }
+            },
+            {
+              "value": "info",
+              "label": {
+                "en": "Light blue",
+                "fr": "Bleu clair"
+              }
+            },
+            {
+              "value": "warning",
+              "label": {
+                "en": "Orange",
+                "fr": "Orange"
+              }
+            },
+            {
+              "value": "danger",
+              "label": {
+                "en": "Red",
+                "fr": "Rouge"
+              }
+            },
+            {
+              "value": "neutral",
+              "label": {
+                "en": "Grey",
+                "fr": "Gris"
+              }
+            }
+          ]
+        },
+        {
+          "key": "off_color",
+          "type": "select",
+          "label": {
+            "en": "State light when off (switch)",
+            "fr": "Voyant à l'arrêt (interrupteur)"
+          },
+          "required": false,
+          "default": "neutral",
+          "options": [
+            {
+              "value": "success",
+              "label": {
+                "en": "Green",
+                "fr": "Vert"
+              }
+            },
+            {
+              "value": "primary",
+              "label": {
+                "en": "Blue",
+                "fr": "Bleu"
+              }
+            },
+            {
+              "value": "info",
+              "label": {
+                "en": "Light blue",
+                "fr": "Bleu clair"
+              }
+            },
+            {
+              "value": "warning",
+              "label": {
+                "en": "Orange",
+                "fr": "Orange"
+              }
+            },
+            {
+              "value": "danger",
+              "label": {
+                "en": "Red",
+                "fr": "Rouge"
+              }
+            },
+            {
+              "value": "neutral",
+              "label": {
+                "en": "Grey",
+                "fr": "Gris"
               }
             }
           ]
@@ -1023,8 +1131,8 @@
           "key": "style",
           "type": "select",
           "label": {
-            "en": "New colour in the widget",
-            "fr": "Nouvelle couleur dans le widget"
+            "en": "New colour of the button (widget)",
+            "fr": "Nouvelle couleur du bouton (widget)"
           },
           "required": false,
           "default": "keep",
@@ -1055,6 +1163,128 @@
               "label": {
                 "en": "Danger (red)",
                 "fr": "Danger (rouge)"
+              }
+            }
+          ]
+        },
+        {
+          "key": "on_color",
+          "type": "select",
+          "label": {
+            "en": "New state light when on",
+            "fr": "Nouveau voyant en marche"
+          },
+          "required": false,
+          "default": "keep",
+          "options": [
+            {
+              "value": "keep",
+              "label": {
+                "en": "Unchanged",
+                "fr": "Inchangé"
+              }
+            },
+            {
+              "value": "success",
+              "label": {
+                "en": "Green",
+                "fr": "Vert"
+              }
+            },
+            {
+              "value": "primary",
+              "label": {
+                "en": "Blue",
+                "fr": "Bleu"
+              }
+            },
+            {
+              "value": "info",
+              "label": {
+                "en": "Light blue",
+                "fr": "Bleu clair"
+              }
+            },
+            {
+              "value": "warning",
+              "label": {
+                "en": "Orange",
+                "fr": "Orange"
+              }
+            },
+            {
+              "value": "danger",
+              "label": {
+                "en": "Red",
+                "fr": "Rouge"
+              }
+            },
+            {
+              "value": "neutral",
+              "label": {
+                "en": "Grey",
+                "fr": "Gris"
+              }
+            }
+          ]
+        },
+        {
+          "key": "off_color",
+          "type": "select",
+          "label": {
+            "en": "New state light when off",
+            "fr": "Nouveau voyant à l'arrêt"
+          },
+          "required": false,
+          "default": "keep",
+          "options": [
+            {
+              "value": "keep",
+              "label": {
+                "en": "Unchanged",
+                "fr": "Inchangé"
+              }
+            },
+            {
+              "value": "success",
+              "label": {
+                "en": "Green",
+                "fr": "Vert"
+              }
+            },
+            {
+              "value": "primary",
+              "label": {
+                "en": "Blue",
+                "fr": "Bleu"
+              }
+            },
+            {
+              "value": "info",
+              "label": {
+                "en": "Light blue",
+                "fr": "Bleu clair"
+              }
+            },
+            {
+              "value": "warning",
+              "label": {
+                "en": "Orange",
+                "fr": "Orange"
+              }
+            },
+            {
+              "value": "danger",
+              "label": {
+                "en": "Red",
+                "fr": "Rouge"
+              }
+            },
+            {
+              "value": "neutral",
+              "label": {
+                "en": "Grey",
+                "fr": "Gris"
               }
             }
           ]
@@ -1136,8 +1366,8 @@
         "fr": "Boutons"
       },
       "description": {
-        "en": "Up to 4 of your virtual buttons, with their icon and colour.",
-        "fr": "Jusqu'à 4 de vos boutons virtuels, avec leur icône et leur couleur."
+        "en": "Up to 4 of your virtual buttons, with their icon, colour and state light.",
+        "fr": "Jusqu'à 4 de vos boutons virtuels, avec leur icône, leur couleur et leur voyant."
       },
       "icon": "toggle-right",
       "action_timeout_seconds": 10,

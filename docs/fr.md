@@ -39,8 +39,13 @@ change. Le bouton est la télécommande, la scène fait le travail.
      chauffage, radiateur, froid / hors-gel, ampoule, volet, prise, musique,
      maison, porte, lit / coucher, repas / cuisine, fête… Pour les **voir avant
      de choisir**, ajoutez le widget **Icônes** (voir plus bas) ;
-   - **Couleur dans le widget** : principal (bleu), secondaire (gris) ou
-     danger (rouge) ;
+   - **Couleur du bouton (widget)** : principal (bleu), secondaire (gris)
+     ou danger (rouge). C'est la couleur de la pastille ;
+   - **Voyant en marche (interrupteur)** et **Voyant à l'arrêt
+     (interrupteur)** : la couleur du voyant d'un interrupteur ou d'un
+     interrupteur temporisé dans le widget, au choix parmi vert, bleu, bleu
+     clair, orange, rouge et gris. Par défaut : vert en marche, gris à
+     l'arrêt. Sans effet pour un bouton poussoir ou un sélecteur ;
    - **Demander une confirmation avant l'appui (widget)** : oui ou non.
 3. Validez. Sous le bouton, le message dit : « Bouton « Chauffage » ajouté.
    Ouvrez maintenant l'onglet Découverte… ».
@@ -150,13 +155,23 @@ déclenchée**. L'intégration s'en protège :
    couleur choisis :
    - un appui sur un **bouton poussoir** envoie une impulsion ; le message
      dit « appui pris par Gladys », ou l'erreur si Gladys ne l'a pas pris ;
-   - un **interrupteur** allumé prend sa couleur (bleu si vous aviez choisi
-     gris), éteint il est gris. Un appui fait ce que la pastille montre :
+   - au-dessus des pastilles, chaque **interrupteur** (temporisé ou non) a
+     une ligne de **voyant** : son icône dans la couleur choisie, son nom et
+     son état en toutes lettres, « Marche » ou « Arrêt ». Par défaut, le
+     voyant est vert en marche et gris à l'arrêt. Vous pouvez choisir ces
+     deux couleurs pour chaque interrupteur (par exemple vert et rouge) ;
+   - la pastille d'un **interrupteur** allumé est pleine, dans sa couleur
+     (bleu si vous aviez choisi gris), avec une coche à la place de son
+     icône ; éteint, elle est grise avec son icône. Un appui fait ce que la
+     pastille montre :
      éteindre une pastille allumée, allumer une pastille éteinte (si l'état a
      changé entre-temps, le message dit « déjà à l'arrêt » ou « déjà en
      marche ») ;
    - pour un **interrupteur temporisé** allumé, une ligne indique le temps
-     restant (« Chauffage : encore 25 min ») ;
+     restant (« Chauffage : encore 25 min »). Sa pastille prend la couleur
+     choisie pour le bouton : elle est rouge seulement si vous avez choisi
+     « Danger (rouge) ». Pour un autre rendu, changez la couleur du bouton ou
+     celle de son voyant avec « Modifier un bouton » ;
    - un **sélecteur** prend une pastille par position, La position
      actuelle est mise en avant : sa couleur et une coche, les autres en gris
      (aucune ligne ne la répète).
@@ -286,14 +301,19 @@ l'arrêt après une durée.
   widget ; avec 5 ou 6, le widget montre une pastille qui ouvre la liste (une
   carte compte 4 pastilles au plus).
 - Pas d'appui long ni de double appui, pas de couleur libre ni de taille de
-  bouton : seulement les trois couleurs du widget.
+  bouton. La pastille n'a que trois couleurs : bleu, gris et rouge. **Pas de
+  pastille verte** : Gladys réserve le vert aux boutons liés directement à
+  un appareil, qui ne peuvent pas demander de confirmation. Le vert existe
+  pour le voyant d'un interrupteur, qui a six couleurs : vert, bleu, bleu
+  clair, orange, rouge et gris. Ce sont les couleurs que Gladys donne aux
+  widgets ; pas de code couleur libre (#00ff00).
 - **La forme des boutons est celle de Gladys** : une pastille avec une icône
   et un nom. Une intégration externe ne dessine rien elle-même (pas de HTML
   ni de CSS : Gladys affiche les widgets à partir d'une liste de composants
   fixée par le cœur). Un **bouton rond marche / arrêt** n'existe donc pas ;
   le plus proche : un interrupteur avec l'icône « Marche / arrêt » (ou
-  « Interrupteur »), en couleur « Danger (rouge) » si vous voulez qu'il se
-  voie. Pas de **tirette** (curseur) non plus : la boîte « Appareils » de
+  « Interrupteur »), avec un voyant vert en marche et rouge à l'arrêt si
+  vous voulez que son état se voie bien. Pas de **tirette** (curseur) non plus : la boîte « Appareils » de
   Gladys n'affiche un curseur que pour de vraies fonctions (lumière, volume,
   volet, ventilateur, durée, limite de charge…), jamais pour un simple
   nombre, et les widgets d'une intégration n'ont pas de curseur du tout.

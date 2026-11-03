@@ -65,6 +65,18 @@ up to date at the end of every milestone.
 
 ## Decisions
 
+- State light (t/11392 #20, green on / red off asked): a widget pill
+  (`button` + `action`) has only `primary` | `secondary` | `danger`; the
+  core's green "active" look exists only for `device_feature` + `value`
+  buttons, which cannot ask a confirmation nor toggle. So the colour goes in
+  one `status` list: a row per switch or timed switch, its icon in
+  `VB_ON_COLOR` / `VB_OFF_COLOR` (the six `WIDGET_COLORS`, default
+  `success` / `neutral`), "On"/"Off" in words, and the on pill takes the
+  tick. No row for a selector (removed in 0.1.3 after #18: it read as a stray
+  value). Colours written in the device params only when not the default,
+  and absent from `/data` when never chosen: old devices and entries are
+  unchanged. SDK 0.16 in the same commit.
+
 - Forum: no dedicated topic, no post from this module's work; the main session
   answers topic 11392 (the core alternative "scene + Quick actions" first).
 - Reuse: no reference library (nothing to port); only the SDK from npm. No

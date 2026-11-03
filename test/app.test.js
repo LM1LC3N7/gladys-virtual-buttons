@@ -17,7 +17,15 @@ import { createClock } from './helpers/clock.js';
 const silent = createLogger({ level: 'silent' });
 
 /** What the real "Change a button" form sends when nothing is touched. */
-const EDIT_FORM = { name: '', minutes: 0, icon: 'keep', style: 'keep', confirm: 'keep' };
+const EDIT_FORM = {
+  name: '',
+  minutes: 0,
+  icon: 'keep',
+  style: 'keep',
+  on_color: 'keep',
+  off_color: 'keep',
+  confirm: 'keep',
+};
 
 async function setup({ store = new MemoryStore(), clock = createClock(), devices = [] } = {}) {
   const gladys = createFakeGladys({ devices });
@@ -751,6 +759,140 @@ test('the widget: up to 4 pills, icon, label, style, confirmation, switch state'
     });
     assert.equal(refused.success, false, JSON.stringify(params));
   }
+});
+
+// Prof_Techno (t/11392 #20): on or off was hard to tell. Each switch shown
+// gets a state light: its icon in the colour chosen for "on" or "off" (green
+// and grey by default), and the state in words. The pill of a switch that is
+// on is filled and takes the tick. A push button and a selector get no row.
+test('the state light of a switch: colours, words, tick, defaults, edit', async () => {
+  const t = await setup();
+  await t.add({ name: 'Nuit', kind: 'switch', icon: 'moon' });
+  await t.add({
+    name: 'Tempo',
+    kind: 'timed',
+    minutes: 10,
+    icon: 'timer',
+    style: 'secondary',
+    on_color: 'warning',
+    off_color: 'danger',
+  });
+  await t.add({ name: 'Portail', kind: 'push', icon: 'door-open' });
+  await t.add({ name: 'Mode', kind: 'selector', positions: 'Jour, Nuit' });
+  const night = await t.create('Nuit');
+  const tempo = await t.create('Tempo');
+  const gate = await t.create('Portail');
+  const mode = await t.create('Mode');
+  // Default colours travel nowhere: the device of "Nuit" is the one of v0.1.
+  assert.deepEqual(
+    night.params.map((p) => p.name),
+    ['VB_KIND', 'VB_LABEL', 'VB_ICON', 'VB_STYLE', 'VB_CONFIRM', 'VB_MINUTES'],
+  );
+  const tempoParams = Object.fromEntries(tempo.params.map((p) => [p.name, p.value]));
+  assert.equal(tempoParams.VB_ON_COLOR, 'warning');
+  assert.equal(tempoParams.VB_OFF_COLOR, 'danger');
+  const settings = {
+    button_1: night.external_id,
+    button_2: tempo.external_id,
+    button_3: gate.external_id,
+  };
+  const get = async (chosen = settings) => {
+    const ack = await t.gladys.fake.widgetGet(WIDGETS.BUTTONS, { settings: chosen });
+    assert.equal(ack.success, true);
+    assert.deepEqual(validateWidgetContent(ack.data.content), []);
+    const { components } = ack.data.content;
+    const lists = components.filter((c) => c.type === 'status');
+    assert.ok(lists.length <= 1, 'one status list at most (core budget)');
+    return {
+      rows: (lists[0]?.items ?? []).map((i) => [i.label, i.value.en, i.value.fr, i.icon, i.color]),
+      pills: components.filter((c) => c.type === 'button').map((p) => [p.label, p.icon, p.style]),
+    };
+  };
+
+  let shown = await get();
+  assert.deepEqual(shown.rows, [
+    ['Nuit', 'Off', 'Arrêt', 'moon', 'neutral'],
+    ['Tempo', 'Off', 'Arrêt', 'timer', 'danger'],
+  ]);
+  assert.deepEqual(shown.pills, [
+    ['Nuit', 'moon', 'secondary'],
+    ['Tempo', 'timer', 'secondary'],
+    ['Portail', 'door-open', 'primary'],
+  ]);
+
+  await t.gladys.fake.setValue(night, night.features[0], 1);
+  await t.gladys.fake.setValue(tempo, tempo.features[0], 1);
+  shown = await get();
+  assert.deepEqual(shown.rows, [
+    ['Nuit', 'On', 'Marche', 'moon', 'success'],
+    ['Tempo', 'On', 'Marche', 'timer', 'warning'],
+  ]);
+  // On: filled (primary when grey was chosen) and the tick, not colour alone.
+  assert.deepEqual(shown.pills, [
+    ['Nuit', 'check-circle', 'primary'],
+    ['Tempo', 'check-circle', 'primary'],
+    ['Portail', 'door-open', 'primary'],
+  ]);
+
+  // A selector alone: no row (its pills mark the position, t/11392 #18).
+  assert.deepEqual((await get({ button_1: mode.external_id })).rows, []);
+
+  // "Change a button": a new light colour, the others kept.
+  const edited = await t.gladys.fake.action(ACTIONS.EDIT, {
+    ...EDIT_FORM,
+    button: night.external_id,
+    on_color: 'info',
+  });
+  assert.equal(edited.success, true);
+  assert.match(edited.data.message.fr, /voyant en marche : Bleu clair/);
+  assert.match(edited.data.message.en, /light when off: unchanged/);
+  shown = await get();
+  assert.deepEqual(shown.rows[0], ['Nuit', 'On', 'Marche', 'moon', 'info']);
+  const refused = await t.gladys.fake.action(ACTIONS.EDIT, {
+    ...EDIT_FORM,
+    button: night.external_id,
+    off_color: 'green',
+  });
+  assert.equal(refused.success, false);
+  assert.match(refused.error, /couleur n'est pas dans la liste|colour is not in the list/);
+});
+
+// A button saved before the state light (no colour in /data nor in its
+// device) still renders, with the default colours.
+test('a button saved without colours shows the default light', async () => {
+  const store = new MemoryStore();
+  store.data = {
+    buttons: [
+      {
+        id: 'b0123456789ab',
+        name: 'Nuit',
+        kind: 'switch',
+        icon: 'moon',
+        style: 'danger',
+        state: 1,
+      },
+    ],
+    removed: [],
+  };
+  const t = await setup({ store });
+  const device = t.discovered('Nuit');
+  assert.ok(device);
+  assert.equal(
+    device.params.some((p) => p.name.endsWith('_COLOR')),
+    false,
+  );
+  const ack = await t.gladys.fake.widgetGet(WIDGETS.BUTTONS, {
+    settings: { button_1: device.external_id },
+  });
+  assert.equal(ack.success, true);
+  assert.deepEqual(validateWidgetContent(ack.data.content), []);
+  const [list] = ack.data.content.components.filter((c) => c.type === 'status');
+  assert.deepEqual(
+    list.items.map((i) => [i.label, i.value.en, i.color]),
+    [['Nuit', 'On', 'success']],
+  );
+  const pill = ack.data.content.components.find((c) => c.type === 'button');
+  assert.deepEqual([pill.icon, pill.style], ['check-circle', 'danger']);
 });
 
 // Prof_Techno's card (t/11392 #18): a selector named "test selecteur" whose

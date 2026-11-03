@@ -46,6 +46,14 @@ export const KIND_LIST = Object.freeze([KINDS.PUSH, KINDS.SWITCH, KINDS.TIMED, K
 export const STYLES = Object.freeze(['primary', 'secondary', 'danger']);
 
 /**
+ * The colours of the state light of a switch or a timed switch:
+ * the semantic colours of the core (WIDGET_COLORS), the only ones a widget
+ * can show. A widget button (pill) has no green: only the three STYLES.
+ * Green first: the default "on" colour.
+ */
+export const COLORS = Object.freeze(['success', 'primary', 'info', 'warning', 'danger', 'neutral']);
+
+/**
  * The icons offered, all in the icon set of the Gladys frontend
  * (server/config/icons.json: the widgets render `fe fe-<name>`, nothing
  * else), grouped by theme for the form. The first is the default. A value
@@ -135,6 +143,10 @@ export const PARAMS = Object.freeze({
   LABEL: 'VB_LABEL',
   /** The position names of a selector, as a JSON array (selectors only). */
   POSITIONS: 'VB_POSITIONS',
+  /** The colour of the state light when on (switches). */
+  ON_COLOR: 'VB_ON_COLOR',
+  /** The colour of the state light when off (switches). */
+  OFF_COLOR: 'VB_OFF_COLOR',
 });
 
 /** The external id type of a button: ext:<selector>:button:<id>. */
@@ -147,6 +159,9 @@ export const LIMITS = Object.freeze({
   minutesMax: 1440,
   /** A widget button label (core bound). */
   widgetLabel: 24,
+  /** A status row of the widget: label and text value (core bounds). */
+  statusLabel: 40,
+  statusValue: 40,
   /**
    * Positions of a selector: 6 for the 6 orders of a pilot wire. Up to
    * WIDGET_PILLS, each one is a pill of the widget; beyond, the widget shows
@@ -193,4 +208,6 @@ export const DEFAULTS = Object.freeze({
   style: 'primary',
   confirm: false,
   minutes: 30,
+  on_color: 'success',
+  off_color: 'neutral',
 });

@@ -33,6 +33,7 @@ export const ERRORS = Object.freeze({
   ),
   iconUnknown: both('This icon is not in the list.', "Cette icône n'est pas dans la liste."),
   styleUnknown: both('This style is not in the list.', "Ce style n'est pas dans la liste."),
+  colorUnknown: both('This colour is not in the list.', "Cette couleur n'est pas dans la liste."),
   confirmUnknown: both(
     'Answer yes or no for the confirmation.',
     'Répondez oui ou non pour la confirmation.',
@@ -178,12 +179,24 @@ export const STYLE_LABELS = Object.freeze({
   danger: both('Danger (red)', 'Danger (rouge)'),
 });
 
+/** The colours of the state light (the semantic colours of the core widgets). */
+export const COLOR_LABELS = Object.freeze({
+  success: both('Green', 'Vert'),
+  primary: both('Blue', 'Bleu'),
+  info: both('Light blue', 'Bleu clair'),
+  warning: both('Orange', 'Orange'),
+  danger: both('Red', 'Rouge'),
+  neutral: both('Grey', 'Gris'),
+});
+
 /** "name: X; icon: Flame / heating; colour: unchanged…" for "Change a button". */
 function changes(values) {
   const items = [
     ['name', both('name', 'nom'), (v) => both(v, v)],
     ['icon', both('icon', 'icône'), (v) => ICON_LABELS[v]],
     ['style', both('colour', 'couleur'), (v) => STYLE_LABELS[v]],
+    ['on_color', both('light when on', 'voyant en marche'), (v) => COLOR_LABELS[v]],
+    ['off_color', both('light when off', "voyant à l'arrêt"), (v) => COLOR_LABELS[v]],
     [
       'confirm',
       both('confirmation', 'confirmation'),
@@ -287,6 +300,8 @@ export const T = Object.freeze({
         `Plus de place sur cette carte pour : ${names.join(', ')}. Une carte affiche 4 pastilles, et un sélecteur de 4 positions au plus une par position : affichez-le sur une carte à lui.`,
       ),
     positionField: both('Position', 'Position'),
+    on: both('On', 'Marche'),
+    off: both('Off', 'Arrêt'),
     iconsPage: (page, pages, from, to, total) =>
       both(
         `Page ${page} of ${pages}: icons ${from} to ${to} of ${total}, in the order of the "Icon" list of the forms.`,

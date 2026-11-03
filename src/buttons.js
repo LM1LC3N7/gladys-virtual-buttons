@@ -18,6 +18,7 @@
 import { randomBytes } from 'node:crypto';
 import { DEVICE_FEATURE_CATEGORIES, DEVICE_FEATURE_TYPES } from '@gladysassistant/integration-sdk';
 import {
+  COLORS,
   DEFAULTS,
   DEVICE_TYPE,
   FEATURES,
@@ -151,6 +152,14 @@ export function sanitizeButton(raw, now = Date.now()) {
     state: isSwitchKind(kind) && raw.state === 1 ? 1 : 0,
     until: null,
   };
+  // The colours of the state light: kept only when valid. A button saved
+  // before them has none and shows the defaults (colorsOf), its /data entry
+  // and its device unchanged.
+  for (const key of ['on_color', 'off_color']) {
+    if (COLORS.includes(raw[key])) {
+      button[key] = raw[key];
+    }
+  }
   if (kind === KINDS.SELECTOR) {
     // A selector without a valid list of positions cannot be one; its state
     // is a position, the first one when unknown.
@@ -201,16 +210,19 @@ export function readFields(fields, { partial = false } = {}) {
       return { error: 'kindUnknown' };
     }
   }
-  for (const [key, list] of [
-    ['icon', ICONS],
-    ['style', STYLES],
+  // A colour left out stays absent: the button shows the defaults (colorsOf).
+  for (const [key, list, unknown, fallback] of [
+    ['icon', ICONS, 'iconUnknown', true],
+    ['style', STYLES, 'styleUnknown', true],
+    ['on_color', COLORS, 'colorUnknown', false],
+    ['off_color', COLORS, 'colorUnknown', false],
   ]) {
     if (has(key)) {
       if (!list.includes(input[key])) {
-        return { error: key === 'icon' ? 'iconUnknown' : 'styleUnknown' };
+        return { error: unknown };
       }
       values[key] = input[key];
-    } else if (!partial) {
+    } else if (!partial && fallback) {
       values[key] = DEFAULTS[key];
     }
   }
@@ -243,6 +255,14 @@ export function readFields(fields, { partial = false } = {}) {
     values.minutes = DEFAULTS.minutes;
   }
   return { values };
+}
+
+/** The colours of the state light of a button: its own, else the defaults. */
+export function colorsOf(button) {
+  return {
+    on: COLORS.includes(button.on_color) ? button.on_color : DEFAULTS.on_color,
+    off: COLORS.includes(button.off_color) ? button.off_color : DEFAULTS.off_color,
+  };
 }
 
 /** The external ids of a button. */
@@ -295,6 +315,15 @@ export function deviceOf(gladys, button) {
     { name: PARAMS.CONFIRM, value: button.confirm ? 'true' : 'false' },
     { name: PARAMS.MINUTES, value: String(button.minutes) },
   ];
+  // A colour travels in the params only when it is not the default: the
+  // device of a button that keeps the defaults stays the one of v0.1.
+  const colors = colorsOf(button);
+  if (colors.on !== DEFAULTS.on_color) {
+    params.push({ name: PARAMS.ON_COLOR, value: colors.on });
+  }
+  if (colors.off !== DEFAULTS.off_color) {
+    params.push({ name: PARAMS.OFF_COLOR, value: colors.off });
+  }
   if (button.kind === KINDS.SELECTOR) {
     params.push({ name: PARAMS.POSITIONS, value: JSON.stringify(button.positions) });
     return {
@@ -410,6 +439,8 @@ export function buttonFromDevice(gladys, device, notes = null) {
       kind,
       icon: params.get(PARAMS.ICON),
       style: params.get(PARAMS.STYLE),
+      on_color: params.get(PARAMS.ON_COLOR),
+      off_color: params.get(PARAMS.OFF_COLOR),
       confirm: params.get(PARAMS.CONFIRM) === 'true',
       minutes: params.get(PARAMS.MINUTES),
       positions,
@@ -425,6 +456,8 @@ export function buttonFromDevice(gladys, device, notes = null) {
     kind,
     icon: params.get(PARAMS.ICON),
     style: params.get(PARAMS.STYLE),
+    on_color: params.get(PARAMS.ON_COLOR),
+    off_color: params.get(PARAMS.OFF_COLOR),
     confirm: params.get(PARAMS.CONFIRM) === 'true',
     minutes: params.get(PARAMS.MINUTES),
     state,

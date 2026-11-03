@@ -10,6 +10,28 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Added
+
+- Widget: each switch and timed switch now has a state light above the
+  pills. It shows the icon of the switch in colour, its name, and "On" or
+  "Off" in words. By default the light is green when on and grey when off.
+- "Add a button" and "Change a button": two new choices, "State light when
+  on" and "State light when off". Six colours: green, blue, light blue,
+  orange, red, grey (the colours Gladys gives to widgets). Asked on the forum
+  (topic 11392).
+
+### Changed
+
+- Widget: the pill of a switch that is on now shows a tick in place of its
+  icon, like the current position of a selector. On is never told by colour
+  alone.
+- The field "Colour in the widget" is now "Colour of the button (widget)". It
+  is still the colour of the pill: blue, grey or red. A pill cannot be green
+  (Gladys keeps green for buttons tied directly to a device).
+- Buttons made before this version keep their look, with the default lights.
+  Their devices do not change.
+- SDK `@gladysassistant/integration-sdk` 0.15 → 0.16.
+
 ## [0.1.4] - 2026-10-29
 
 ### Fixed

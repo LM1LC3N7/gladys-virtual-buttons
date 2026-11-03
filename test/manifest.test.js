@@ -19,10 +19,11 @@ import {
   KIND_LIST,
   LIMITS,
   STYLES,
+  COLORS,
   WIDGET_SLOTS,
   WIDGETS,
 } from '../src/constants.js';
-import { ICON_LABELS, STYLE_LABELS } from '../src/i18n.js';
+import { COLOR_LABELS, ICON_LABELS, STYLE_LABELS } from '../src/i18n.js';
 import { deviceOf, sanitizeButton } from '../src/buttons.js';
 
 // The core's own sources, when a Gladys clone is at hand (not on GitHub CI):
@@ -146,6 +147,11 @@ test('the actions are the ones the code handles, with the code lists', () => {
   assert.equal(add.icon.default, DEFAULTS.icon);
   assert.deepEqual(values(add.style), [...STYLES]);
   assert.equal(add.style.default, DEFAULTS.style);
+  for (const key of ['on_color', 'off_color']) {
+    assert.deepEqual(values(add[key]), [...COLORS], key);
+    assert.equal(add[key].default, DEFAULTS[key], key);
+    assert.equal(add[key].required, false, key);
+  }
   assert.deepEqual(values(add.confirm), ['no', 'yes']);
   assert.equal(add.confirm.default, DEFAULTS.confirm ? 'yes' : 'no');
   assert.equal(add.minutes.min, LIMITS.minutesMin);
@@ -162,7 +168,9 @@ test('the actions are the ones the code handles, with the code lists', () => {
   assert.deepEqual(values(edit.icon), [KEEP, ...ICONS]);
   assert.deepEqual(values(edit.style), [KEEP, ...STYLES]);
   assert.deepEqual(values(edit.confirm), [KEEP, 'no', 'yes']);
-  for (const key of ['icon', 'style', 'confirm']) {
+  assert.deepEqual(values(edit.on_color), [KEEP, ...COLORS]);
+  assert.deepEqual(values(edit.off_color), [KEEP, ...COLORS]);
+  for (const key of ['icon', 'style', 'on_color', 'off_color', 'confirm']) {
     assert.equal(edit[key].default, KEEP, key);
   }
   assert.equal(edit.minutes.default, 0);
@@ -183,6 +191,11 @@ test('the actions are the ones the code handles, with the code lists', () => {
   }
   for (const option of add.style.options) {
     assert.deepEqual(STYLE_LABELS[option.value], option.label, option.value);
+  }
+  for (const key of ['on_color', 'off_color']) {
+    for (const option of [...add[key].options, ...edit[key].options.slice(1)]) {
+      assert.deepEqual(COLOR_LABELS[option.value], option.label, option.value);
+    }
   }
   // No scene trigger nor scene action in v1 (redundant, loop risk).
   assert.equal(manifest.scene_triggers, undefined);

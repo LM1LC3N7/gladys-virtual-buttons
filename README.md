@@ -65,7 +65,14 @@ Gladys ⇄ SDK ⇄ src/handlers.js ⇄ src/app.js (ButtonsApp)
 - **Widget** "Buttons" (Gladys 5.1.0+): four optional settings `button_1` …
   `button_4` (none required, filled slots shown in order, a message when none), one pill each (widget action `press_<n>`, params
   `{ id, value }`: the value the card showed, never a toggle; a confirmation
-  can be asked); a switch that is on shows its colour; a selector takes one
+  can be asked); a switch that is on shows its colour, filled, with the
+  `check-circle` tick in place of its icon; each switch or timed switch shown
+  also gets a row in one `status` list (its icon in the colour chosen for on
+  or off, its name, "On"/"Off" in words): `VB_ON_COLOR` / `VB_OFF_COLOR`,
+  one of the core `WIDGET_COLORS` (default `success` / `neutral`, written in
+  the params only when not the default, so old devices are unchanged); a
+  pill has only the three button styles (no green: the core keeps the green
+  "active" look for `device_feature` buttons); a selector takes one
   pill per position (the current one in colour with a tick; no status row), never
   half of its pills; a selector of 5 or 6 positions takes one pill labelled
   "name: current position", whose action opens a form with a `select` of its positions (widget action

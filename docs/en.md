@@ -38,7 +38,12 @@ button is the remote, the scene does the work.
      frost protection, light bulb, shutter, plug, music, house, door, bed /
      bedtime, meal / kitchen, party… To **see them before choosing**, add the
      **Icons** widget (see below);
-   - **Colour in the widget**: main (blue), secondary (grey) or danger (red);
+   - **Colour of the button (widget)**: main (blue), secondary (grey) or
+     danger (red). It is the colour of the pill;
+   - **State light when on (switch)** and **State light when off
+     (switch)**: the colour of the light of a switch or a timed switch in the
+     widget: green, blue, light blue, orange, red or grey. By default: green
+     when on, grey when off. No effect on a push button or a selector;
    - **Ask for confirmation before pressing (widget)**: yes or no.
 3. Confirm. Under the button, the message says: `Button "Heating" added. Now
 open the Discovery tab…`.
@@ -142,12 +147,20 @@ it**. The integration protects itself:
    colour:
    - pressing a **push button** sends a pulse; the message says "pressed", or
      the error if Gladys did not take it;
-   - a **switch** that is on shows its colour (blue if you chose grey); off,
-     it is grey. A press does what the pill shows: turn off a pill that is on,
+   - above the pills, each **switch** (timed or not) has a **state light**
+     row: its icon in the chosen colour, its name, and its state in words,
+     "On" or "Off". By default the light is green when on and grey when off.
+     You can choose both colours for each switch (green and red, for
+     example);
+   - the pill of a **switch** that is on is filled, in its colour (blue if
+     you chose grey), with a tick in place of its icon; off, it is grey with
+     its icon. A press does what the pill shows: turn off a pill that is on,
      turn on a pill that is off (if the state changed meanwhile, the message
      says "already off" or "already on");
    - for a **timed switch** that is on, a line shows the time left
-     ("Heating: 25 min left");
+     ("Heating: 25 min left"). Its pill takes the colour chosen for the
+     button: it is red only if you chose "Danger (red)". For another look,
+     change the colour of the button or of its light with "Change a button";
    - a **selector** takes one pill per position, The current
      position stands out: its colour and a tick, the others grey (no line
      repeats it). A press puts
@@ -266,14 +279,18 @@ duration.
   positions at most. Up to 4, each one is a pill of the widget; with 5 or 6,
   the widget shows one pill that opens the list (a card holds 4 pills at
   most).
-- No long press nor double press, no free colour nor button size: only the
-  three colours of the widget.
+- No long press nor double press, no free colour nor button size. A pill has
+  only three colours: blue, grey and red. **No green pill**: Gladys keeps
+  green for buttons tied directly to a device, which cannot ask for a
+  confirmation. Green exists for the state light of a switch, which has six
+  colours: green, blue, light blue, orange, red and grey. These are the
+  colours Gladys gives to widgets; no free colour code (#00ff00).
 - **The shape of the buttons is the Gladys one**: a pill with an icon and a
   name. An external integration draws nothing itself (no HTML nor CSS: Gladys
   renders the widgets from a list of components fixed by the core). So there
   is no **round on / off button**; the closest: a switch with the "On / off"
-  (or "Switch") icon, in the "Danger (red)" colour if you want it to stand
-  out. No **pull cord** (slider) either: the "Devices" box of Gladys only
+  (or "Switch") icon, with a green light when on and a red one when off if
+  you want its state to stand out. No **pull cord** (slider) either: the "Devices" box of Gladys only
   shows a slider for real functions (light, volume, shutter, fan, duration,
   charge limit…), never for a plain number, and the widgets of an
   integration have no slider at all. Using one of those functions would make

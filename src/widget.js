@@ -9,10 +9,17 @@
 // icons the forms offer.
 //
 // Every pill carries a widget action (never device_feature + value): only an
-// action can ask a confirmation. The core tints a pill only for
-// device_feature + value, so
-// a switch shows its state through its style instead: the chosen style when
-// on (primary when "secondary" was chosen), secondary when off.
+// action can ask a confirmation. The core tints a pill green ("active") only
+// for device_feature + value, and an action pill has three styles (primary,
+// secondary, danger), no green. So a switch shows its state through its
+// style and a tick: the chosen style and the tick when on (primary when
+// "secondary" was chosen), secondary with its own icon when off.
+//
+// Above the pills, a status list gives each switch and timed switch shown
+// its state light: its icon in the colour chosen for "on" or "off" (the
+// semantic colours of the core), its name, and the state in words ("On" /
+// "Off"): never the colour alone. A selector has no row (its pills mark the
+// current position).
 // -----------------------------------------------------------------------------
 
 import {
@@ -28,6 +35,7 @@ import {
   WIDGET_POSITION_FIELD,
 } from './constants.js';
 import { ICON_LABELS, T } from './i18n.js';
+import { colorsOf, isSwitchKind } from './buttons.js';
 
 const cut = (text, max) => {
   const chars = [...String(text ?? '')];
@@ -43,6 +51,31 @@ export function styleOf(button) {
     return 'secondary';
   }
   return lit(button);
+}
+
+/** The icon a pill shows: a switch that is on takes the tick, like the current position of a selector. */
+export function iconOf(button) {
+  return button.kind !== KINDS.PUSH && button.state === 1 ? CURRENT_ICON : button.icon;
+}
+
+/**
+ * The state light of a switch or a timed switch (a status row), or null for
+ * a push button (no state) and a selector (its pills mark the current
+ * position; a row repeating it read as a stray value, t/11392 #18). Old
+ * buttons without colours have the defaults (sanitizeButton).
+ */
+export function lightOf(button) {
+  if (!isSwitchKind(button.kind)) {
+    return null;
+  }
+  const on = button.state === 1;
+  const colors = colorsOf(button);
+  return {
+    label: cut(button.name, LIMITS.statusLabel),
+    value: on ? T.widget.on : T.widget.off,
+    icon: button.icon,
+    color: on ? colors.on : colors.off,
+  };
 }
 
 /** The style of a pill that is "on": the chosen one, primary when grey was chosen. */
@@ -145,13 +178,19 @@ export function buttonsWidget(buttons, now) {
     pills.push({
       button,
       label: button.name,
-      icon: button.icon,
+      icon: iconOf(button),
       style: styleOf(button),
       value: button.kind === KINDS.PUSH || button.state !== 1 ? 1 : 0,
     });
   }
   if (crowded.length > 0) {
     components.push({ type: 'text', text: cut2(T.widget.crowded(crowded), 300), variant: 'body' });
+  }
+  // One status list (the core budget), at most 4 rows: the switches shown,
+  // crowded ones included.
+  const lights = buttons.map(lightOf).filter(Boolean);
+  if (lights.length > 0) {
+    components.push({ type: 'status', items: lights });
   }
   for (const [index, pill] of pills.entries()) {
     // Action keys are unique within a content: press_1 … press_4.
