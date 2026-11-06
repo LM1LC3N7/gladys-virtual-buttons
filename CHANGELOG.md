@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-11-06
+
 ### Fixed
 
 - Widget: the integration no longer adds its own card reads to the taps.
@@ -151,7 +153,8 @@ the notes of the version's GitHub Release.
 - Step-by-step guides in English and French, with the exact words of the
   Gladys screens.
 
-[Unreleased]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.2...v0.1.3
