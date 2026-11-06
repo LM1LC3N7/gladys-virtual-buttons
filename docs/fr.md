@@ -41,13 +41,17 @@ change. Le bouton est la télécommande, la scène fait le travail.
      de choisir**, ajoutez le widget **Icônes** (voir plus bas) ;
    - **Couleur du bouton (widget)** : principal (bleu), secondaire (gris)
      ou danger (rouge). C'est la couleur de la pastille ;
-   - **Voyant en marche (interrupteur)** et **Voyant à l'arrêt
+   - **Voyant en marche (interrupteur, sélecteur)** et **Voyant à l'arrêt
      (interrupteur)** : la couleur du voyant d'un interrupteur ou d'un
      interrupteur temporisé dans le widget, au choix parmi vert, bleu, bleu
      clair, orange, rouge et gris. Par défaut : vert en marche, gris à
-     l'arrêt. Bleu clair et orange sont les plus pâles sur le thème clair :
-     préférez vert, bleu, rouge ou gris. Sans effet pour un bouton poussoir
-     ou un sélecteur (« Modifier un bouton » les ignore alors) ;
+     l'arrêt. Un sélecteur prend la couleur « en marche » pour son voyant
+     (il est toujours sur une de ses positions). Bleu clair et orange sont
+     les plus pâles sur le thème clair : préférez vert, bleu, rouge ou gris.
+     Le voyant est une ligne au-dessus des pastilles : la pastille garde la
+     couleur du bouton (bleu, gris ou rouge, Gladys n'en permet pas d'autre).
+     Sans effet pour un bouton poussoir, ni « Voyant à l'arrêt » pour un
+     sélecteur (« Modifier un bouton » les ignore alors) ;
    - **Demander une confirmation avant l'appui (widget)** : oui ou non.
 3. Validez. Sous le bouton, le message dit : « Bouton « Chauffage » ajouté.
    Ouvrez maintenant l'onglet Découverte… ».
@@ -175,8 +179,9 @@ déclenchée**. L'intégration s'en protège :
      « Danger (rouge) ». Pour un autre rendu, changez la couleur du bouton ou
      celle de son voyant avec « Modifier un bouton » ;
    - un **sélecteur** prend une pastille par position. La position
-     actuelle est mise en avant : sa couleur et une coche, les autres en gris
-     (aucune ligne ne la répète).
+     actuelle est mise en avant : sa couleur et une coche, les autres en gris.
+     Son voyant, au-dessus, la nomme (« Éco », ou « Position : 4 » pour un nombre) dans la couleur
+     choisie pour « Voyant en marche ».
      Un appui met le sélecteur sur la position de la pastille (le message dit
      « déjà sur Éco » si c'était déjà le cas). Une carte a 4 pastilles au
      plus : un sélecteur de 4 positions prend une carte à lui. Un sélecteur
@@ -193,7 +198,14 @@ déclenchée**. L'intégration s'en protège :
      avant d'envoyer.
 4. Pour plus de 4 boutons, ajoutez plusieurs widgets. Gladys accepte au plus
    30 appuis par minute sur les widgets de l'intégration, tous widgets
-   confondus.
+   confondus, et après chaque appui relit chaque carte « Boutons » ouverte
+   (30 lectures par minute pour toute l'intégration, tous écrans compris).
+   Au-delà, c'est Gladys qui refuse : « L'action a échoué », et les cartes
+   restent figées jusqu'à une minute avant de revenir. Avec deux cartes
+   ouvertes, cela laisse une quinzaine d'appuis par minute : si vous appuyez
+   souvent, groupez vos boutons sur peu de cartes. Dans ces limites, des
+   appuis rapides sont tous pris, le dernier gagne, et un appui ne bloque pas
+   les autres boutons.
 
 Les boutons fonctionnent aussi dans les boîtes habituelles de Gladys : la boîte
 « Appareils » d'une pièce (bouton **« Appuyer »** pour un poussoir, interrupteur
@@ -335,8 +347,9 @@ l'arrêt après une durée.
   peut être ajoutée si Gladys l'a.
 - L'intégration ne lance pas les scènes elle-même : c'est le changement d'état
   du bouton qui les déclenche (étape 3).
-- Le widget se met à jour à chaque appui, et sinon toutes les 15 à 30
-  secondes.
+- Le widget se met à jour à chaque appui sur la carte, dans les 10 secondes
+  après un changement venu d'ailleurs (scène, boîte « Appareils », fin d'une
+  temporisation), et sinon chaque minute.
 - Si la liste enregistrée est perdue (nouveau volume), les boutons sont
   reconstruits depuis les appareils de Gladys : un interrupteur et un
   sélecteur reprennent la valeur connue de Gladys, un interrupteur temporisé

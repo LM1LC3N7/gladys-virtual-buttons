@@ -256,5 +256,27 @@ Minors from `_lots/hors-lot/virtual-buttons-r3.md`:
 
 ## Next patch (review virtual-buttons-015-r2, minors)
 
-- [ ] Test `Math.max(1, …)` in `minutesLeft` (src/widget.js): `until <= now` must show "On · 1 min", not a negative number (mutant survives).
+- [x] Test `Math.max(1, …)` in `minutesLeft` (src/widget.js): `until <= now` must show "On · 1 min", not a negative number (mutant survives). Done with t/11392 #23.
 - [ ] Optional: "Add a button" stores the light colours for a push button or a selector, where they have no effect (harmless: unused `VB_ON_COLOR` / `VB_OFF_COLOR` params).
+
+## Forum feedback 4 (topic 11392 #23, Prof_Techno, 2026-11-05)
+
+- [x] Fast taps froze every card for up to a minute, then "The action failed" (reproduced in the sandbox: 16
+      taps with two "Buttons" cards open, then 429 for every card and tap). Cause in the core: 30 widget actions
+      and 30 content pulls a minute per integration (`MAX_WIDGET_ACTIONS_PER_MINUTE`,
+      `MAX_WIDGET_GET_MISSES_PER_MINUTE`), every successful action invalidates the widget and every open card pulls
+      again; on a 429 the card keeps its last content and retries after 60 s (`ExternalWidgetBox.jsx`), hence the
+      wrong state shown. Ours on top: a nudge per tap, a 15 s cache while a timer ran, and the 20 a minute of a
+      button applied to taps. Fixed: no nudge for a tap, nudges spaced 10.5 s with a trailing one, one cache length
+      (60 s), taps exempt from the per-button window (still in the states budget). Left to the core: each tap still
+      costs one pull per open card. A core change (no pull count for the refresh that follows an action, or
+      coalescing) would lift it; to propose upstream if Louis agrees.
+- [x] Colours: the light colours did render (sandbox, light and dark themes); the selector had none. A selector now
+      has its light in the "on" colour: its position, "Position: 4" for a number.
+- [ ] Dynamic form (fields of the chosen type only): impossible in the manifest. An action form is "a flat form"
+      (`manifest.schema.json`, `action.fields` → `configField`, `additionalProperties: false`: no
+      `visible_if`/`depends_on`) and `ConfigSchemaForm.jsx` renders every field. Possible instead: one action per
+      type ("Add a push button", "Add a switch", "Add a timed switch", "Add a selector"), each with its own
+      fields. Louis to decide.
+- [ ] Tooling: `gi install` updates a dev install without refreshing its manifest (the core reads it from the image
+      label `io.gladysassistant.manifest`, which our images do not set): the sandbox kept the 0.1.1 manifest.

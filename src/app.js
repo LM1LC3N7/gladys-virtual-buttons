@@ -24,8 +24,14 @@
 // - a selector is on one of its positions; a change of position is
 //   guarded like an "on" (deadline, 20 a minute, saved before the ack), and
 //   the position Gladys already holds is never published again;
-// - 20 presses, "on" or changes of position a minute per button, 240 states
-//   a minute in all.
+// - 20 presses, "on" or changes of position a minute per button for the
+//   commands from Gladys (a scene that loops stops there); a tap on a card is
+//   held by the 30 widget actions a minute of Gladys instead; 240 states a
+//   minute in all;
+// - a tap on a card never asks a widget refresh (Gladys refreshes the cards
+//   after every widget action: each refresh spends a content pull of every
+//   open card, 30 a minute for the whole integration); any other change asks
+//   one, at most every 10.5 s, the last one never dropped.
 // -----------------------------------------------------------------------------
 
 import { createLogger } from '@gladysassistant/integration-sdk';
@@ -148,6 +154,9 @@ export class ButtonsApp {
     // A recovered selector lost its position names: the status says so.
     this.defaultedPositions = false;
     this.pendingEdit = null;
+    /** The last refresh nudge (monotonic) and the one waiting for its turn. */
+    this.lastNudge = null;
+    this.nudgeTimer = null;
     this.sweepTimer = null;
     this.stopped = false;
   }
@@ -209,6 +218,10 @@ export class ButtonsApp {
     }
     this.pulseTimers.clear();
     this.endTimers.clear();
+    if (this.nudgeTimer) {
+      this.timers.clearTimeout(this.nudgeTimer);
+      this.nudgeTimer = null;
+    }
     await this.queue.catch(() => {});
     await this.store.flush();
   }
@@ -342,7 +355,38 @@ export class ButtonsApp {
     }
   }
 
+  /**
+   * Asks the open cards to pull their content again. Gladys drops a nudge
+   * that follows the previous one within 10 s, so one due sooner waits for
+   * its turn (a single one, which carries every change made meanwhile: the
+   * content is built when pulled). A change made by a tap on the card needs
+   * none: Gladys refreshes the cards after every widget action, and a second
+   * refresh would spend the pulls the next taps need (t/11392 #23).
+   */
   refreshWidget() {
+    if (this.stopped || this.nudgeTimer) {
+      return;
+    }
+    const wait = this.lastNudge === null ? 0 : this.lastNudge + TIMINGS.refreshNudge - this.mono();
+    if (wait <= 0) {
+      this.sendNudge();
+      return;
+    }
+    const timer = this.timers.setTimeout(() => {
+      if (this.nudgeTimer !== timer) {
+        return;
+      }
+      this.nudgeTimer = null;
+      if (!this.stopped) {
+        this.sendNudge();
+      }
+    }, wait);
+    timer?.unref?.();
+    this.nudgeTimer = timer;
+  }
+
+  sendNudge() {
+    this.lastNudge = this.mono();
     try {
       this.gladys.requestWidgetRefresh(WIDGETS.BUTTONS);
     } catch {
@@ -536,27 +580,35 @@ export class ButtonsApp {
     return window;
   }
 
-  /** Loop and flood guard for a press or an "on". */
-  admit(button, states) {
+  /**
+   * Loop and flood guard for a press or an "on". A tap on a card is a person
+   * (Gladys allows 30 widget actions a minute to the whole integration), never
+   * a scene that loops on its own button: it is not held to the 20 a minute
+   * of one button, nor counted in them (a burst of taps never refuses the
+   * next command of a scene); it takes its share of the states budget.
+   */
+  admit(button, states, { card = false } = {}) {
     const window = this.windowOf(this.presses, button.id);
-    if (window.free() < 1) {
+    if (!card && window.free() < 1) {
       throw new ButtonError('tooFast');
     }
     if (!this.budget.take(states)) {
       throw new ButtonError('budget');
     }
-    window.take(1);
+    if (!card) {
+      window.take(1);
+    }
   }
 
   /**
    * A push: 1 now, 0 after the pulse. Waits (bounded) for Gladys to take the
    * 1: resolves 'ok' or 'unconfirmed', throws when it was not sent.
    */
-  async press(button, received) {
+  async press(button, received, { card = false } = {}) {
     if (this.mono() - received > TIMINGS.late) {
       throw new ButtonError('late');
     }
-    this.admit(button, 2);
+    this.admit(button, 2, { card });
     const previous = this.pulseTimers.get(button.id);
     if (previous) {
       this.timers.clearTimeout(previous);
@@ -610,9 +662,9 @@ export class ButtonsApp {
   /**
    * A switch on (1) or off (0). Resolves { before, value, sent } where `sent`
    * is the publication (a promise, or null when nothing had to be sent),
-   * never awaited here.
+   * never awaited here. `card`: a tap on a card (admit, refreshWidget).
    */
-  async setSwitch(button, value, received) {
+  async setSwitch(button, value, received, { card = false } = {}) {
     const result = await this.run(async () => {
       if (this.buttons.get(button.id) !== button) {
         throw new ButtonError('unknownButton');
@@ -633,7 +685,7 @@ export class ButtonsApp {
         if (held && button.kind === KINDS.SWITCH) {
           return { before, value, publish: false };
         }
-        this.admit(button, held ? 0 : 1);
+        this.admit(button, held ? 0 : 1, { card });
       } else {
         const offs = this.windowOf(this.offs, button.id);
         const flood = offs.free() < 1;
@@ -668,7 +720,9 @@ export class ButtonsApp {
     if (result.publish) {
       sent = this.publish(button, value);
     }
-    this.refreshWidget();
+    if (!card) {
+      this.refreshWidget();
+    }
     return { before: result.before, value, sent };
   }
 
@@ -677,7 +731,7 @@ export class ButtonsApp {
    * like setSwitch. Every position is guarded like an "on": the late ones
    * are refused, 20 changes a minute at most, saved before the ack.
    */
-  async setPosition(button, position, received) {
+  async setPosition(button, position, received, { card = false } = {}) {
     const result = await this.run(async () => {
       if (this.buttons.get(button.id) !== button) {
         throw new ButtonError('unknownButton');
@@ -701,7 +755,7 @@ export class ButtonsApp {
       if (held) {
         return { before, publish: false };
       }
-      this.admit(button, 1);
+      this.admit(button, 1, { card });
       button.state = position;
       try {
         await this.save();
@@ -717,7 +771,9 @@ export class ButtonsApp {
     if (result.publish) {
       sent = this.publish(button, position);
     }
-    this.refreshWidget();
+    if (!card) {
+      this.refreshWidget();
+    }
     return { before: result.before, value: position, sent };
   }
 
@@ -853,10 +909,13 @@ export class ButtonsApp {
         // scenes at other names without a word.
         throw new ButtonError('positionsMoved');
       }
-      if (!isSwitchKind(button.kind)) {
-        // A push button and a selector have no state light: its colours
-        // would change nothing on the card.
+      if (button.kind === KINDS.PUSH) {
+        // A push button has no state light: its colours would change
+        // nothing on the card.
         delete values.on_color;
+        delete values.off_color;
+      } else if (button.kind === KINDS.SELECTOR) {
+        // A selector's light is always "on" (one of its positions).
         delete values.off_color;
       }
       if (Object.keys(values).length === 0) {
@@ -1076,7 +1135,8 @@ export class ButtonsApp {
       if (position === null) {
         throw new ButtonError('badPosition');
       }
-      const { before } = await this.setPosition(button, position, received);
+      // A tap: Gladys refreshes the cards after the action itself (no nudge).
+      const { before } = await this.setPosition(button, position, received, { card: true });
       const label = button.positions[position - 1] ?? String(position);
       return before === position
         ? T.alreadyPosition(button.name, label)
@@ -1089,10 +1149,10 @@ export class ButtonsApp {
       if (value !== 1) {
         throw new ButtonError('badValue');
       }
-      const outcome = await this.press(button, received);
+      const outcome = await this.press(button, received, { card: true });
       return outcome === 'ok' ? T.pressed(button.name) : T.pressedUnconfirmed(button.name);
     }
-    const { before } = await this.setSwitch(button, value, received);
+    const { before } = await this.setSwitch(button, value, received, { card: true });
     if (value === 0) {
       return before === 0 ? T.alreadyOff(button.name) : T.switchedOff(button.name);
     }

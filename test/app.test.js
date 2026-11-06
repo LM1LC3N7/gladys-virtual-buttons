@@ -9,7 +9,7 @@ import { createLogger, validateWidgetContent } from '@gladysassistant/integratio
 import { createFakeGladys } from '@gladysassistant/integration-sdk/testing';
 import { ButtonsApp } from '../src/app.js';
 import { registerHandlers } from '../src/handlers.js';
-import { ACTIONS, ICON_PAGES, ICONS, LIMITS, WIDGETS } from '../src/constants.js';
+import { ACTIONS, ICON_PAGES, ICONS, LIMITS, TIMINGS, WIDGETS } from '../src/constants.js';
 import { ICON_LABELS } from '../src/i18n.js';
 import { MemoryStore } from '../src/store.js';
 import { createClock } from './helpers/clock.js';
@@ -351,6 +351,132 @@ test('a scene that presses its own button in a loop is stopped', async () => {
   assert.match(refused.error, /une minute/);
   await t.clock.advance(61 * 1000);
   assert.equal((await t.gladys.fake.setValue(device, feature, 1)).success, true);
+});
+
+// Prof_Techno (t/11392 #23): fast taps froze every card for tens of seconds,
+// then "L'action a échoué", and the switch shown was not the real one. Gladys
+// allows the whole integration 30 widget actions and 30 content pulls a
+// minute, and refreshes every open card after each action: a nudge of ours on
+// top spent pulls the next taps needed, and the 20 a minute of one button
+// refused a person tapping. A burst of taps, each made on the card the
+// previous one left (as the dashboard does), is answered at once, never
+// refused, never nudged, and ends on the last tap; the other buttons answer
+// in the middle of it.
+test('a burst of taps on the card: every one answered, the last one wins, no nudge', async () => {
+  const t = await setup();
+  await t.add({ name: 'Lampe', kind: 'switch', icon: 'lightbulb' });
+  await t.add({ name: 'Tempo', kind: 'timed', minutes: 5 });
+  await t.add({ name: 'Mode', kind: 'selector', positions: 'Confort, Éco, Hors-gel' });
+  await t.add({ name: 'Sonnette', kind: 'push' });
+  const lamp = await t.create('Lampe');
+  const tempo = await t.create('Tempo');
+  const mode = await t.create('Mode');
+  const bell = await t.create('Sonnette');
+  await t.clock.advance(60 * 1000);
+  const nudges = t.gladys.fake.widgetRefreshes.length;
+  const card = { button_1: lamp.external_id, button_2: tempo.external_id };
+  const modeCard = { button_1: mode.external_id };
+  const bellCard = { button_1: bell.external_id };
+  const content = async (settings) =>
+    (await t.gladys.fake.widgetGet(WIDGETS.BUTTONS, { settings })).data.content;
+  const pill = async (settings, index) =>
+    (await content(settings)).components.filter((c) => c.type === 'button')[index];
+  const tap = (settings, p) =>
+    t.gladys.fake.widgetAction(WIDGETS.BUTTONS, p.action.key, p.action.params, { settings });
+  const lampFeature = lamp.features[0].external_id;
+  const taps = 2 * LIMITS.pressesPerButton + 5;
+  for (let i = 0; i < taps; i += 1) {
+    const ack = await tap(card, await pill(card, 0));
+    assert.equal(ack.success, true, `tap ${i + 1}: ${ack.error}`);
+    assert.match(ack.data.message.en, i % 2 === 0 ? /: on\.$/ : /: off\.$/);
+    if (i === 10) {
+      // Another button, mid-burst: answered too.
+      const other = await tap(card, await pill(card, 1));
+      assert.equal(other.success, true);
+      const position = await tap(modeCard, await pill(modeCard, 2));
+      assert.equal(position.success, true);
+    }
+  }
+  // 45 taps: on. The card, /data and Gladys say so, once settled.
+  await t.clock.settle();
+  assert.equal(t.app.buttons.get(t.idOf(lamp)).state, 1);
+  assert.equal(t.store.data.buttons.find((b) => b.name === 'Lampe').state, 1);
+  assert.equal(t.gladys.fake.lastState(lampFeature), 1);
+  const rows = (await content(card)).components.find((c) => c.type === 'status').items;
+  assert.equal(rows[0].value.en, 'On');
+  assert.equal(t.gladys.fake.widgetRefreshes.length, nudges, 'no nudge for a tap');
+  // A scene that loops on its own switch is still stopped: the taps are not
+  // counted in its 20 a minute (they never refuse it), nor exempt it.
+  for (let i = 0; i < LIMITS.pressesPerButton; i += 1) {
+    await t.gladys.fake.setValue(lamp, lamp.features[0], 0);
+    assert.equal((await t.gladys.fake.setValue(lamp, lamp.features[0], 1)).success, true, `${i}`);
+  }
+  await t.gladys.fake.setValue(lamp, lamp.features[0], 0);
+  const refused = await t.gladys.fake.setValue(lamp, lamp.features[0], 1);
+  assert.equal(refused.success, false);
+  assert.match(refused.error, /une minute/);
+  // The person still can: a tap is not held to that limit.
+  const byHand = await tap(card, await pill(card, 0));
+  assert.equal(byHand.success, true, byHand.error);
+  assert.match(byHand.data.message.en, /: on\.$/);
+  await t.clock.advance(60 * 1000);
+  const before = t.gladys.fake.widgetRefreshes.length;
+  // A push button tapped as fast: every press taken.
+  for (let i = 0; i < LIMITS.pressesPerButton + 5; i += 1) {
+    const ack = await tap(bellCard, await pill(bellCard, 0));
+    assert.equal(ack.success, true, `press ${i + 1}: ${ack.error}`);
+  }
+  // A selector tapped as fast: never refused, the last position wins.
+  for (let i = 0; i < 2 * LIMITS.pressesPerButton + 1; i += 1) {
+    const ack = await tap(modeCard, await pill(modeCard, i % 3));
+    assert.equal(ack.success, true, `position tap ${i + 1}: ${ack.error}`);
+  }
+  await t.clock.settle();
+  // The 41st tap was on the 2nd pill: Éco, here and in Gladys.
+  assert.equal(t.app.buttons.get(t.idOf(mode)).state, 2);
+  assert.equal(t.gladys.fake.lastState(mode.features[0].external_id), '2');
+  // No nudge from any tap, even once the spacing has passed.
+  await t.clock.advance(60 * 1000);
+  assert.equal(t.gladys.fake.widgetRefreshes.length, before);
+});
+
+// Gladys drops a refresh nudge that follows the previous one within 10 s:
+// a change right after another (a scene, the device box) stayed hidden until
+// the cache expired. One nudge now, the next one waits its turn and carries
+// every change made meanwhile; none after stop().
+test('refresh nudges: spaced 10.5 s, the last change never dropped, none after stop', async () => {
+  const t = await setup();
+  await t.add({ name: 'Lampe', kind: 'switch' });
+  const lamp = await t.create('Lampe');
+  await t.clock.advance(60 * 1000);
+  const feature = lamp.features[0];
+  const sent = () => t.gladys.fake.widgetRefreshes.length;
+  const start = sent();
+  await t.gladys.fake.setValue(lamp, feature, 1);
+  assert.equal(sent(), start + 1, 'the first change nudges at once');
+  await t.clock.advance(1000);
+  await t.gladys.fake.setValue(lamp, feature, 0);
+  await t.gladys.fake.setValue(lamp, feature, 1);
+  assert.equal(sent(), start + 1, 'too soon: it waits');
+  await t.clock.advance(9000);
+  assert.equal(sent(), start + 1, 'still within 10.5 s of the first');
+  await t.clock.advance(600);
+  assert.equal(sent(), start + 2, 'one nudge for the two changes, 10.5 s after the first');
+  await t.clock.advance(60 * 1000);
+  assert.equal(sent(), start + 2, 'nothing more');
+  // A change long after: at once again.
+  await t.gladys.fake.setValue(lamp, feature, 0);
+  assert.equal(sent(), start + 3);
+  // A nudge waiting at stop() is dropped with its timer.
+  await t.gladys.fake.setValue(lamp, feature, 1);
+  assert.equal(sent(), start + 3);
+  assert.ok(t.clock.pending() >= 2, 'the sweep and the waiting nudge');
+  await t.app.stop();
+  assert.equal(t.clock.pending(), 0, 'no timer left after stop(), the nudge one included');
+  await t.clock.advance(60 * 1000);
+  assert.equal(sent(), start + 3, 'no nudge after stop()');
+  t.app.refreshWidget();
+  assert.equal(sent(), start + 3);
 });
 
 test('S11: a scene "X = Off -> turn X off" does not loop, and "off" is never refused', async () => {
@@ -720,13 +846,16 @@ test('the widget: up to 4 pills, icon, label, style, confirmation, switch state'
   const tap = (pill) =>
     t.gladys.fake.widgetAction(WIDGETS.BUTTONS, pill.action.key, pill.action.params, { settings });
 
+  // A tap on the card never nudges: Gladys refreshes the cards after every
+  // widget action itself (t/11392 #23).
+  await t.clock.advance(60 * 1000);
+  const nudges = t.gladys.fake.widgetRefreshes.length;
   const on = await tap(pills[0]);
   assert.equal(on.success, true);
   assert.match(on.data.message.fr, /retour à l'arrêt dans 20 min/);
   const pressed = await tap(pills[1]);
   assert.match(pressed.data.message.fr, /appui pris par Gladys/);
   assert.equal(t.gladys.fake.lastState(gate.features[0].external_id), 1);
-  assert.ok(t.gladys.fake.widgetRefreshes.includes(WIDGETS.BUTTONS));
   // The same stale pill tapped again: already on, duration started again.
   const again = await tap(pills[0]);
   assert.match(again.data.message.fr, /déjà en marche, durée relancée/);
@@ -740,7 +869,9 @@ test('the widget: up to 4 pills, icon, label, style, confirmation, switch state'
   assert.equal(content.components.filter((c) => c.type === 'text').length, 0);
   const row = content.components.find((c) => c.type === 'status').items[0];
   assert.deepEqual([row.value.en, row.value.fr], ['On · 20 min', 'Marche · 20 min']);
-  assert.equal(content.ttl_seconds, 15);
+  assert.equal(content.ttl_seconds, TIMINGS.widgetTtl);
+  await t.clock.advance(30 * 1000);
+  assert.equal(t.gladys.fake.widgetRefreshes.length, nudges, 'no nudge for a tap');
 
   const off = await tap(pills[0]);
   assert.match(off.data.message.en, /off/);
@@ -836,8 +967,11 @@ test('the state light of a switch: colours, words, tick, defaults, edit', async 
     ['Portail', 'door-open', 'primary'],
   ]);
 
-  // A selector alone: no row (its pills mark the position, t/11392 #18).
-  assert.deepEqual((await get({ button_1: mode.external_id })).rows, []);
+  // A selector has its light too, in its "on" colour, with its position
+  // (t/11392 #23; a number is never bare, #18).
+  assert.deepEqual((await get({ button_1: mode.external_id })).rows, [
+    ['Mode', 'Jour', 'Jour', 'power', 'success'],
+  ]);
 
   // "Change a button": a new light colour, the others kept.
   const edited = await t.gladys.fake.action(ACTIONS.EDIT, {
@@ -858,19 +992,31 @@ test('the state light of a switch: colours, words, tick, defaults, edit', async 
   assert.equal(refused.success, false);
   assert.match(refused.error, /couleur n'est pas dans la liste|colour is not in the list/);
 
-  // A push button and a selector have no light: their colours are ignored
-  // (r1 point 2), alone they are "nothing to change".
-  for (const device of [gate, mode]) {
-    for (const colour of [{ on_color: 'warning' }, { off_color: 'info' }]) {
-      const ignored = await t.gladys.fake.action(ACTIONS.EDIT, {
-        ...EDIT_FORM,
-        button: device.external_id,
-        ...colour,
-      });
-      assert.equal(ignored.success, false, device.name);
-      assert.match(ignored.error, /Rien à modifier|Nothing to change/);
-    }
+  // A push button has no light, a selector no "off": those colours are
+  // ignored (r1 point 2), alone they are "nothing to change".
+  for (const [device, colour] of [
+    [gate, { on_color: 'warning' }],
+    [gate, { off_color: 'info' }],
+    [mode, { off_color: 'info' }],
+  ]) {
+    const ignored = await t.gladys.fake.action(ACTIONS.EDIT, {
+      ...EDIT_FORM,
+      button: device.external_id,
+      ...colour,
+    });
+    assert.equal(ignored.success, false, device.name);
+    assert.match(ignored.error, /Rien à modifier|Nothing to change/);
   }
+  // The "on" colour of a selector is its light's.
+  const lit = await t.gladys.fake.action(ACTIONS.EDIT, {
+    ...EDIT_FORM,
+    button: mode.external_id,
+    on_color: 'danger',
+  });
+  assert.equal(lit.success, true);
+  assert.deepEqual((await get({ button_1: mode.external_id })).rows, [
+    ['Mode', 'Jour', 'Jour', 'power', 'danger'],
+  ]);
   const renamed = await t.gladys.fake.action(ACTIONS.EDIT, {
     ...EDIT_FORM,
     button: gate.external_id,
@@ -923,9 +1069,10 @@ test('a button saved without colours shows the default light', async () => {
 });
 
 // Prof_Techno's card (t/11392 #18): a selector named "test selecteur" whose
-// positions are numbers showed a row with a bare "4" at the right. No selector
-// has a status row any more; a long one says its position in its pill.
-test('a selector never adds a status row; a long one names its position in its pill', async () => {
+// positions are numbers showed a row with a bare "4" at the right. Its light
+// row now says "Position: 4" (t/11392 #23: the colours of a selector showed
+// nowhere); a long one also says its position in its pill.
+test('a selector light names its position; a long one names it in its pill too', async () => {
   const t = await setup();
   const numbers = { kind: 'selector', icon: 'flame' };
   await t.add({ ...numbers, name: 'test selecteur', positions: '1, 2, 3, 4, 5' });
@@ -950,21 +1097,20 @@ test('a selector never adds a status row; a long one names its position in its p
     return ack.data.content.components;
   };
   const labels = (components) => components.filter((c) => c.type === 'button').map((p) => p.label);
-  const noRow = (components) =>
-    assert.deepEqual(
-      components.filter((c) => c.type === 'status'),
-      [],
-    );
+  const rows = (components) =>
+    components
+      .filter((c) => c.type === 'status')
+      .flatMap((c) => c.items.map((i) => [i.label, i.value.en, i.value.fr]));
 
   // 5 positions, on "4": the pill says which one, nothing at the right.
   await t.gladys.fake.setValue(five, five.features[0], '4');
   let components = await get(five);
   assert.deepEqual(labels(components), ['test selecteur: 4']);
-  noRow(components);
+  assert.deepEqual(rows(components), [['test selecteur', 'Position: 4', 'Position : 4']]);
   // 6 positions, on the first one.
   components = await get(six);
   assert.deepEqual(labels(components), ['six: A']);
-  noRow(components);
+  assert.deepEqual(rows(components), [['six', 'A', 'A']]);
   // 2 to 4 positions: one pill per position, the current one marked, no row.
   await t.gladys.fake.setValue(four, four.features[0], '3');
   components = await get(three, four);
@@ -980,12 +1126,15 @@ test('a selector never adds a status row; a long one names its position in its p
       ['flame', 'secondary'],
     ],
   );
-  noRow(components);
-  // Crowded out: still no row, the line says why.
+  assert.deepEqual(rows(components), [['quatre', 'Position: 3', 'Position : 3']]);
+  // Crowded out: its light stays, the line says why it has no pill.
   components = await get(four, five);
   assert.deepEqual(labels(components), ['1', '2', '3', '4']);
   assert.match(components.find((c) => c.variant === 'body').text.fr, /Plus de place/);
-  noRow(components);
+  assert.deepEqual(rows(components), [
+    ['quatre', 'Position: 3', 'Position : 3'],
+    ['test selecteur', 'Position: 4', 'Position : 4'],
+  ]);
   // Names too long for a pill: bounded, the position kept as far as it can be.
   await t.gladys.fake.setValue(long, long.features[0], '5');
   components = await get(long);
@@ -1362,10 +1511,17 @@ test('a selector in the widget: one pill per position, the current one marked', 
     pills.map((p) => p.action.key),
     ['press_1', 'press_2', 'press_3', 'press_4'],
   );
-  // The pills say the position: no row repeats it (no bare value at the right).
+  // The light names the position, in the "on" colour.
   assert.deepEqual(
-    components.filter((c) => c.type === 'status'),
-    [],
+    components.filter((c) => c.type === 'status').flatMap((c) => c.items),
+    [
+      {
+        label: 'Chauffage',
+        value: { en: 'Éco', fr: 'Éco' },
+        icon: 'flame',
+        color: 'success',
+      },
+    ],
   );
   // A tap sets the position of its pill; the current one says "already".
   let tap = await t.gladys.fake.widgetAction(WIDGETS.BUTTONS, 'press_4', pills[3].action.params);
@@ -1394,9 +1550,10 @@ test('a selector in the widget: one pill per position, the current one marked', 
   );
   const note = components.find((c) => c.type === 'text' && c.variant === 'body');
   assert.match(note.text.fr, /Plus de place sur cette carte pour : Chauffage\./);
+  // Its light stays: the position is still read on the card.
   assert.deepEqual(
-    components.filter((c) => c.type === 'status'),
-    [],
+    components.filter((c) => c.type === 'status').flatMap((c) => c.items.map((i) => i.label)),
+    ['Chauffage', 'Volets'],
   );
 });
 
@@ -1678,11 +1835,11 @@ test('a selector of 6 positions in the widget: one pill that opens the list', as
       default: '2',
     },
   ]);
-  // The pill names the current position, no other row does.
+  // The pill names the current position, and so does the light.
   assert.equal(pill.label, 'Fil pilote: Confort -1');
   assert.deepEqual(
-    components.filter((c) => c.type === 'status'),
-    [],
+    components.filter((c) => c.type === 'status').flatMap((c) => c.items.map((i) => i.value.fr)),
+    ['Confort -1'],
   );
 
   // The position chosen in the list, as the core relays it.

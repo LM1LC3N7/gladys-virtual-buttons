@@ -46,6 +46,7 @@ gladys-assistant-integration.json manifest: actions, widget
 docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
 test/                             node --test: fake Gladys (SDK), memory store, hand-moved clock
 scripts/cover.mjs                 cover.png generator (plain Node)
+scripts/mutants.mjs, mutants.json mutation check of the fixes (not in the image nor the CI; memcap)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 

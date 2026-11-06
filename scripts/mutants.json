@@ -1,0 +1,134 @@
+[
+  {
+    "name": "t/11392 #23: a tap on a switch nudges a widget refresh again",
+    "file": "src/app.js",
+    "from": "      sent = this.publish(button, value);\n    }\n    if (!card) {",
+    "to": "      sent = this.publish(button, value);\n    }\n    if (true) {"
+  },
+  {
+    "name": "t/11392 #23: a tap on a selector nudges a widget refresh again",
+    "file": "src/app.js",
+    "from": "      sent = this.publish(button, position);\n    }\n    if (!card) {",
+    "to": "      sent = this.publish(button, position);\n    }\n    if (true) {"
+  },
+  {
+    "name": "t/11392 #23: a tap on a card is held to the 20 a minute of one button",
+    "file": "src/app.js",
+    "from": "    if (!card && window.free() < 1) {",
+    "to": "    if (window.free() < 1) {"
+  },
+  {
+    "name": "t/11392 #23: the taps on a card count in the 20 a minute of the scenes",
+    "file": "src/app.js",
+    "from": "    if (!card) {\n      window.take(1);\n    }",
+    "to": "    window.take(1);"
+  },
+  {
+    "name": "t/11392 #23: a tap on a push button is held to the 20 a minute",
+    "file": "src/app.js",
+    "from": "this.press(button, received, { card: true })",
+    "to": "this.press(button, received)"
+  },
+  {
+    "name": "t/11392 #23: a tap on a switch is not marked as a card tap",
+    "file": "src/app.js",
+    "from": "this.setSwitch(button, value, received, { card: true })",
+    "to": "this.setSwitch(button, value, received)"
+  },
+  {
+    "name": "t/11392 #23: a tap on a selector is not marked as a card tap",
+    "file": "src/app.js",
+    "from": "this.setPosition(button, position, received, { card: true })",
+    "to": "this.setPosition(button, position, received)"
+  },
+  {
+    "name": "nudges: no spacing (Gladys drops the second within 10 s)",
+    "file": "src/app.js",
+    "from": "    if (wait <= 0) {\n      this.sendNudge();",
+    "to": "    if (true) {\n      this.sendNudge();"
+  },
+  {
+    "name": "nudges: the waiting one is never sent",
+    "file": "src/app.js",
+    "from": "      this.nudgeTimer = null;\n      if (!this.stopped) {\n        this.sendNudge();\n      }",
+    "to": "      this.nudgeTimer = null;"
+  },
+  {
+    "name": "nudges: a waiting one is sent after stop()",
+    "file": "src/app.js",
+    "from": "    if (this.nudgeTimer) {\n      this.timers.clearTimeout(this.nudgeTimer);\n      this.nudgeTimer = null;\n    }\n    await this.queue",
+    "to": "    await this.queue"
+  },
+  {
+    "name": "nudges: refreshWidget works after stop()",
+    "file": "src/app.js",
+    "from": "    if (this.stopped || this.nudgeTimer) {",
+    "to": "    if (this.nudgeTimer) {"
+  },
+  {
+    "name": "nudges: the spacing is not taken from the last one",
+    "file": "src/app.js",
+    "from": "  sendNudge() {\n    this.lastNudge = this.mono();",
+    "to": "  sendNudge() {"
+  },
+  {
+    "name": "nudges: spaced 10 s, the limit of Gladys itself (no margin)",
+    "file": "src/constants.js",
+    "from": "  refreshNudge: 10_500,",
+    "to": "  refreshNudge: 10_000,"
+  },
+  {
+    "name": "widget: cache back to 30 s",
+    "file": "src/constants.js",
+    "from": "  widgetTtl: 60,",
+    "to": "  widgetTtl: 30,"
+  },
+  {
+    "name": "widget: a short cache while a timer runs",
+    "file": "src/widget.js",
+    "from": "  return { ttl_seconds: TIMINGS.widgetTtl, components };",
+    "to": "  return { ttl_seconds: buttons.some((b) => b.state === 1 && b.kind === KINDS.TIMED) ? 15 : TIMINGS.widgetTtl, components };"
+  },
+  {
+    "name": "t/11392 #23: a selector has no light",
+    "file": "src/widget.js",
+    "from": "  if (button.kind === KINDS.SELECTOR) {\n    const position",
+    "to": "  if (false) {\n    const position"
+  },
+  {
+    "name": "t/11392 #23: a selector's light takes the off colour",
+    "file": "src/widget.js",
+    "from": "      color: colors.on,\n    };\n  }\n  if (!isSwitchKind",
+    "to": "      color: colors.off,\n    };\n  }\n  if (!isSwitchKind"
+  },
+  {
+    "name": "t/11392 #18: a selector's light shows the bare position",
+    "file": "src/widget.js",
+    "from": "    const value = /^[0-9]+$/.test(position) ? T.widget.position(position) : both(position);",
+    "to": "    const value = both(position);"
+  },
+  {
+    "name": "t/11392 #23: Change a button ignores the on colour of a selector",
+    "file": "src/app.js",
+    "from": "      if (button.kind === KINDS.PUSH) {\n        // A push button has no state light",
+    "to": "      if (button.kind !== KINDS.SWITCH && button.kind !== KINDS.TIMED) {\n        // A push button has no state light"
+  },
+  {
+    "name": "t/11392 #23: Change a button takes an off colour for a selector",
+    "file": "src/app.js",
+    "from": "        // A selector's light is always \"on\" (one of its positions).\n        delete values.off_color;",
+    "to": "        // A selector's light is always \"on\" (one of its positions)."
+  },
+  {
+    "name": "r2 minor: time left without its floor of 1 min",
+    "file": "src/widget.js",
+    "from": "  return Math.max(1, Math.ceil((button.until - now) / 60000));",
+    "to": "  return Math.ceil((button.until - now) / 60000);"
+  },
+  {
+    "name": "t/11392 #23: a selector's light always says \"Position:\" (cut in a narrow card)",
+    "file": "src/widget.js",
+    "from": "    const value = /^[0-9]+$/.test(position) ? T.widget.position(position) : both(position);",
+    "to": "    const value = T.widget.position(position);"
+  }
+]

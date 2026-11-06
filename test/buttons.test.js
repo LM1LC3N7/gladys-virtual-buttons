@@ -18,7 +18,7 @@ import {
   toMinutes,
   wireOf,
 } from '../src/buttons.js';
-import { COLORS, DEFAULTS } from '../src/constants.js';
+import { COLORS, DEFAULTS, TIMINGS } from '../src/constants.js';
 import { sanitize } from '../src/store.js';
 import { buttonsWidget, iconOf, lightOf, styleOf } from '../src/widget.js';
 
@@ -91,7 +91,18 @@ test('the colours of the state light: checked, optional, kept in the device', ()
 test('the state light and the pill of each kind', () => {
   const base = { name: 'A', icon: 'moon', style: 'secondary', positions: ['X', 'Y'] };
   assert.equal(lightOf({ ...base, kind: 'push', state: 0 }), null);
-  assert.equal(lightOf({ ...base, kind: 'selector', state: 1 }), null);
+  // A selector's light: the "on" colour, the position; a number is never
+  // bare (t/11392 #18).
+  const selector = lightOf({ ...base, kind: 'selector', state: 2, on_color: 'warning' });
+  assert.deepEqual(
+    [selector.label, selector.value.en, selector.value.fr, selector.icon, selector.color],
+    ['A', 'Y', 'Y', 'moon', 'warning'],
+  );
+  const number = lightOf({ ...base, kind: 'selector', state: 2, positions: ['1', '12'] });
+  assert.deepEqual([number.value.en, number.value.fr], ['Position: 12', 'Position : 12']);
+  const named = lightOf({ ...base, kind: 'selector', state: 1, positions: ['Confort -1', 'B'] });
+  assert.equal(named.value.fr, 'Confort -1');
+  assert.equal(lightOf({ ...base, kind: 'selector', state: 1 }).color, 'success');
   const off = lightOf({ ...base, kind: 'switch', state: 0 });
   assert.deepEqual([off.value.fr, off.icon, off.color], ['Arrêt', 'moon', 'neutral']);
   const on = lightOf({ ...base, kind: 'timed', state: 1, on_color: 'primary' });
@@ -104,6 +115,11 @@ test('the state light and the pill of each kind', () => {
   assert.deepEqual([timed.value.en, timed.value.fr], ['On · 25 min', 'Marche · 25 min']);
   // Under a minute left still says 1 min; no valid end, no time.
   assert.equal(lightOf({ ...base, kind: 'timed', state: 1, until: 5 }, 0).value.en, 'On · 1 min');
+  // An end already passed (the wall clock jumped forward): 1 min, never a
+  // negative number (r2 of t/11392 #20).
+  for (const until of [0, -5 * 60000]) {
+    assert.equal(lightOf({ ...base, kind: 'timed', state: 1, until }, 0).value.en, 'On · 1 min');
+  }
   assert.equal(lightOf({ ...base, kind: 'timed', state: 1, until: null }, 0).value.en, 'On');
   assert.equal(lightOf({ ...base, kind: 'timed', state: 0, until: 60000 }, 0).value.en, 'Off');
 });
@@ -135,7 +151,9 @@ test('4 timed switches on with 60-character names: every time left shown', () =>
     [1, 2, 3, 4].map((n) => [40, `On · ${n * 1440} min`, `Marche · ${n * 1440} min`]),
   );
   assert.equal(content.components.filter((c) => c.type === 'button').length, 4);
-  assert.equal(content.ttl_seconds, 15);
+  // One cache length, timers or not: the pulls belong to the taps (t/11392 #23).
+  assert.equal(content.ttl_seconds, TIMINGS.widgetTtl);
+  assert.equal(buttonsWidget([{ ...buttons[0], state: 0, until: null }], now).ttl_seconds, 60);
 });
 
 test('a device and back: the params rebuild the button', () => {

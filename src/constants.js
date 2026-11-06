@@ -184,8 +184,22 @@ export const TIMINGS = Object.freeze({
   sweep: 30 * 1000,
   /** Budget window. */
   window: 60 * 1000,
-  /** Widget content cache. */
-  widgetTtl: 30,
+  /**
+   * Widget content cache, in seconds. Every pull of a content counts in the
+   * 30 pulls a minute Gladys allows the whole integration, every open card
+   * included, and a card at its limit stays frozen up to a minute: a long
+   * cache leaves them to the taps. A change is pushed by a nudge (refreshNudge)
+   * or by Gladys itself after a widget action, so the cache never holds a
+   * state for long; 60 s keeps the time left of a timed switch within a minute.
+   */
+  widgetTtl: 60,
+  /**
+   * The spacing of the refresh nudges: Gladys drops, without a word, a nudge
+   * arriving within 10 s of the previous one for the same widget, so a
+   * change right after another would stay hidden until the cache expires.
+   * A nudge due sooner waits for this delay (one at a time, the latest state).
+   */
+  refreshNudge: 10_500,
   /**
    * An "on" or a press older than this (since it was received) is refused,
    * nothing sent: Gladys shows a failure after 5 s.

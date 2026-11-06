@@ -10,6 +10,21 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Fixed
+
+- Widget: fast taps no longer freeze the cards. Gladys allows an integration
+  30 widget actions and 30 card reads a minute, and reads every open card
+  again after each tap; the integration asked one more read on top of each
+  tap, and held a person to the 20 changes a minute meant for a scene that
+  loops. Now a tap asks no extra read, any other change asks one at most
+  every 10 seconds (the last one never lost), the cards are read once a
+  minute instead of every 15 to 30 seconds, and every fast tap is taken (the
+  last one wins). Beyond the limits of Gladys, it still says "The action
+  failed" for up to a minute. Reported on the forum (topic 11392).
+- Widget: a selector now has a state light too, in the "State light when
+  on" colour, naming its position ("Eco", "Position: 4" for a number); its colours showed
+  nowhere. "Change a button" keeps that colour for a selector.
+
 ## [0.1.5] - 2026-11-03
 
 ### Added

@@ -553,8 +553,8 @@
           "key": "on_color",
           "type": "select",
           "label": {
-            "en": "State light when on (switch)",
-            "fr": "Voyant en marche (interrupteur)"
+            "en": "State light when on (switch, selector)",
+            "fr": "Voyant en marche (interrupteur, sélecteur)"
           },
           "required": false,
           "default": "success",
@@ -1171,8 +1171,8 @@
           "key": "on_color",
           "type": "select",
           "label": {
-            "en": "New state light when on, switch",
-            "fr": "Nouveau voyant en marche, interrupteur"
+            "en": "New state light when on, switch or selector",
+            "fr": "Nouveau voyant en marche, interrupteur ou sélecteur"
           },
           "required": false,
           "default": "keep",

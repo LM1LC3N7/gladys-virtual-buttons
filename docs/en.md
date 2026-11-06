@@ -40,12 +40,15 @@ button is the remote, the scene does the work.
      **Icons** widget (see below);
    - **Colour of the button (widget)**: main (blue), secondary (grey) or
      danger (red). It is the colour of the pill;
-   - **State light when on (switch)** and **State light when off
+   - **State light when on (switch, selector)** and **State light when off
      (switch)**: the colour of the light of a switch or a timed switch in the
      widget: green, blue, light blue, orange, red or grey. By default: green
-     when on, grey when off. Light blue and orange are the palest on the
-     light theme: prefer green, blue, red or grey. No effect on a push button
-     or a selector ("Change a button" ignores them there);
+     when on, grey when off. A selector's light takes the "when on" colour
+     (it is always on one of its positions). Light blue and orange are the
+     palest on the light theme: prefer green, blue, red or grey. The light is
+     a row above the pills: the pill keeps the colour of the button (blue,
+     grey or red, Gladys allows no other). No effect on a push button, nor
+     "when off" on a selector ("Change a button" ignores them there);
    - **Ask for confirmation before pressing (widget)**: yes or no.
 3. Confirm. Under the button, the message says: `Button "Heating" added. Now
 open the Discovery tab…`.
@@ -164,8 +167,9 @@ it**. The integration protects itself:
      button: it is red only if you chose "Danger (red)". For another look,
      change the colour of the button or of its light with "Change a button";
    - a **selector** takes one pill per position. The current
-     position stands out: its colour and a tick, the others grey (no line
-     repeats it). A press puts
+     position stands out: its colour and a tick, the others grey. Its light,
+     above, names it ("Eco", or "Position: 4" for a number) in the colour chosen for "State light
+     when on". A press puts
      the selector on the position of the pill (the message says "already on
      Eco" when it was). A card holds 4 pills at most: a selector of 4
      positions takes a card of its own. A selector that has no room left for
@@ -180,7 +184,14 @@ it**. The integration protects itself:
    - if you asked for a **confirmation**, Gladys asks you to confirm before
      sending.
 4. For more than 4 buttons, add several widgets. Gladys accepts at most 30
-   presses a minute on the widgets of the integration, all widgets together.
+   presses a minute on the widgets of the integration, all widgets together,
+   and after each press reads every open "Buttons" card again (30 reads a
+   minute for the whole integration, every screen included). Beyond that,
+   Gladys itself refuses: "The action failed", and the cards stay frozen for
+   up to a minute before coming back. With two cards open, that leaves about
+   fifteen presses a minute: if you press often, group your buttons on few
+   cards. Within these limits, fast presses are all taken, the last one
+   wins, and a press never holds the other buttons.
 
 The buttons also work in the usual Gladys boxes: the "Devices" box of a room
 (a **"Push"** button for a push button, a toggle for the switches, a group of
@@ -310,7 +321,9 @@ duration.
   has it.
 - The integration does not start scenes itself: the state change of the button
   starts them (step 3).
-- The widget updates at every press, and otherwise every 15 to 30 seconds.
+- The widget updates at every press on the card, within 10 seconds of a
+  change made elsewhere (a scene, the "Devices" box, the end of a timer), and
+  otherwise every minute.
 - If the saved list is lost (a new volume), the buttons are rebuilt from the
   Gladys devices: a switch and a selector take back the value Gladys holds, a
   timed switch comes back off (its "Off" scene runs).

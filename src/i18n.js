@@ -309,5 +309,8 @@ export const T = Object.freeze({
       ),
     // The value of the status row of a timed switch that is on: ≤ 40 characters.
     onFor: (minutes) => both(`On · ${minutes} min`, `Marche · ${minutes} min`),
+    // The value of the light of a selector on a position named by a number:
+    // never a bare "4" (t/11392 #18).
+    position: (name) => both(`Position: ${name}`, `Position : ${name}`),
   },
 });

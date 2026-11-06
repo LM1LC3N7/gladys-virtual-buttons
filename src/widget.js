@@ -1,8 +1,8 @@
 // -----------------------------------------------------------------------------
 // The dashboard widgets, pure. "Buttons": up to 4 pills, each with the icon,
 // label and style of its button; a selector of up to 4 positions takes one
-// pill per position, the current one marked (its colour and a tick), with no
-// other row repeating it. A selector of 5 or 6 positions takes one pill
+// pill per position, the current one marked (its colour and a tick), and a
+// light row naming it. A selector of 5 or 6 positions takes one pill
 // that opens the list of its positions (a widget action form: the core holds
 // 4 buttons a content) and whose label says the current position.
 // "Icons": one page of the
@@ -15,11 +15,11 @@
 // style and a tick: the chosen style and the tick when on (primary when
 // "secondary" was chosen), secondary with its own icon when off.
 //
-// Above the pills, a status list gives each switch and timed switch shown
-// its state light: its icon in the colour chosen for "on" or "off" (the
-// semantic colours of the core), its name, and the state in words ("On" /
-// "Off"): never the colour alone. A selector has no row (its pills mark the
-// current position).
+// Above the pills, a status list gives each switch, timed switch and
+// selector shown its state light: its icon in the colour chosen for "on" or
+// "off" (the semantic colours of the core), its name, and the state in words
+// ("On" / "Off", "Eco", "Position: 4"): never the colour alone. A selector's light
+// takes the "on" colour (it is always on one of its positions).
 // -----------------------------------------------------------------------------
 
 import {
@@ -54,6 +54,7 @@ export function styleOf(button) {
 }
 
 const cut2 = (text, max) => ({ en: cut(text.en, max), fr: cut(text.fr, max) });
+const both = (text) => ({ en: text, fr: text });
 
 /** The icon a pill shows: a switch that is on takes the tick, like the current position of a selector. */
 export function iconOf(button) {
@@ -61,20 +62,32 @@ export function iconOf(button) {
 }
 
 /**
- * The state light of a switch or a timed switch (a status row), or null for
- * a push button (no state) and a selector (its pills mark the current
- * position; a row repeating it read as a stray value, t/11392 #18). Old
- * buttons without colours have the defaults (sanitizeButton). A timed switch
- * that is on says its time left in the same value ("On · 25 min"), so the
- * name is not repeated in a caption (r1 of t/11392 #20); `now` is the clock
- * reading of the content.
+ * The state light of a button (a status row), or null for a push button (no
+ * state). Old buttons without colours have the defaults (sanitizeButton). A
+ * timed switch that is on says its time left in the same value ("On · 25
+ * min"), so the name is not repeated in a caption (r1 of t/11392 #20); `now`
+ * is the clock reading of the content. A selector's light has the "on"
+ * colour and its position ("Eco"; "Position: 4" for a number, never a bare
+ * "4", t/11392 #18): the colours chosen for it showed nowhere (t/11392 #23).
  */
 export function lightOf(button, now) {
+  const colors = colorsOf(button);
+  if (button.kind === KINDS.SELECTOR) {
+    const position = button.positions[button.state - 1] ?? String(button.state);
+    // A narrow card cuts a long value: the name alone, unless it is a bare
+    // number, which says "Position: 4".
+    const value = /^[0-9]+$/.test(position) ? T.widget.position(position) : both(position);
+    return {
+      label: cut(button.name, LIMITS.statusLabel),
+      value: cut2(value, LIMITS.statusValue),
+      icon: button.icon,
+      color: colors.on,
+    };
+  }
   if (!isSwitchKind(button.kind)) {
     return null;
   }
   const on = button.state === 1;
-  const colors = colorsOf(button);
   const left = on && button.kind === KINDS.TIMED ? minutesLeft(button, now) : null;
   const value = on ? (left === null ? T.widget.on : T.widget.onFor(left)) : T.widget.off;
   return {
@@ -132,10 +145,6 @@ export function messageWidget(text) {
  */
 export function buttonsWidget(buttons, now) {
   const components = [];
-  // The time left of a timed switch that is on is in its status row.
-  const running = buttons.filter(
-    (b) => b.kind === KINDS.TIMED && b.state === 1 && Number.isFinite(b.until),
-  );
   // At most 4 pills in a content (the core budget). A selector of up to 4
   // positions needs one per position: when they do not all fit, it gets none
   // (never half a selector), and a line says to show it on a card of its own.
@@ -193,8 +202,8 @@ export function buttonsWidget(buttons, now) {
   if (crowded.length > 0) {
     components.push({ type: 'text', text: cut2(T.widget.crowded(crowded), 300), variant: 'body' });
   }
-  // One status list (the core budget), at most 4 rows: the switches shown,
-  // crowded ones included.
+  // One status list (the core budget), at most 4 rows: the switches and
+  // selectors shown, crowded ones included.
   const lights = buttons.map((b) => lightOf(b, now)).filter(Boolean);
   if (lights.length > 0) {
     components.push({ type: 'status', items: lights });
@@ -221,9 +230,9 @@ export function buttonsWidget(buttons, now) {
       action,
     });
   }
-  // Shorter cache while a timer runs, so the time left stays close.
-  const ttl = running.length > 0 ? 15 : TIMINGS.widgetTtl;
-  return { ttl_seconds: ttl, components };
+  // One cache length, timers running or not: every pull counts in the 30 a
+  // minute of the whole integration (TIMINGS.widgetTtl).
+  return { ttl_seconds: TIMINGS.widgetTtl, components };
 }
 
 /** The list of the positions of a selector, the current one chosen at first. */
