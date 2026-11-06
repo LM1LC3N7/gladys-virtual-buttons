@@ -55,8 +55,9 @@ Gladys ⇄ SDK ⇄ src/handlers.js ⇄ src/app.js (ButtonsApp)
   3.5 s, 20 a minute, saved before the ack); the position Gladys holds is
   never published again; "Change a button" never removes the current
   position.
-- **Guards**: 20 presses, "on" or changes of position a minute per button (a scene that triggers
-  itself), "off" never refused; 240 states a minute in all; states Gladys
+- **Guards**: 20 presses, "on" or changes of position a minute per button for
+  the commands from Gladys (a scene that triggers itself); a tap on the widget
+  is exempt (Gladys itself allows 30 widget actions a minute), "off" never refused; 240 states a minute in all; states Gladys
   refused sent again by the sweep (never a late push "1").
 - **Actions**: "Change a button" starts on "keep" (duration 0) and lists what
   changed; the same changes for another button right after must be asked
@@ -74,7 +75,8 @@ Gladys ⇄ SDK ⇄ src/handlers.js ⇄ src/app.js (ButtonsApp)
   the params only when not the default, so old devices are unchanged); a
   pill has only the three button styles (no green: the core keeps the green
   "active" look for `device_feature` buttons); a selector takes one
-  pill per position (the current one in colour with a tick; no status row), never
+  pill per position (the current one in colour with a tick; its status row
+  names the position in the "on" colour), never
   half of its pills; a selector of 5 or 6 positions takes one pill labelled
   "name: current position", whose action opens a form with a `select` of its positions (widget action
   `fields`, params `{ id }`, the choice in `values.position` as `"1"` …

@@ -133,7 +133,9 @@ Do not make a scene that sends a command **back to the button that started
 it**. The integration protects itself:
 
 - a press, an "on" or a change of position repeated more than **20 times in a
-  minute** on the same button is refused for the rest of the minute;
+  minute** on the same button by Gladys (a scene, the "Devices" box, the
+  voice) is refused for the rest of the minute. Taps on the widget card are
+  not counted: Gladys itself limits them to 30 a minute;
 - the "off" of a switch is **never** refused; an "off" of a switch already off
   (and an "on" of a switch already on, or the position a selector is already
   on) is accepted without sending anything to Gladys, so without starting a
@@ -321,7 +323,7 @@ duration.
   has it.
 - The integration does not start scenes itself: the state change of the button
   starts them (step 3).
-- The widget updates at every press on the card, within 10 seconds of a
+- The widget updates at every press on the card, within 11 seconds of a
   change made elsewhere (a scene, the "Devices" box, the end of a timer), and
   otherwise every minute.
 - If the saved list is lost (a new volume), the buttons are rebuilt from the

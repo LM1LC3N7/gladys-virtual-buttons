@@ -130,5 +130,35 @@
     "file": "src/widget.js",
     "from": "    const value = /^[0-9]+$/.test(position) ? T.widget.position(position) : both(position);",
     "to": "    const value = T.widget.position(position);"
+  },
+  {
+    "name": "r1 #23: the end of a timer does not nudge",
+    "file": "src/app.js",
+    "from": "      this.flushStates({ force: true }).catch(() => {});\n      this.refreshWidget();",
+    "to": "      this.flushStates({ force: true }).catch(() => {});"
+  },
+  {
+    "name": "r1 #23: Add/Change/Remove do not nudge",
+    "file": "src/app.js",
+    "from": "      .catch((err) => this.log.warn(`After change: ${err.message}`));\n    this.refreshWidget();",
+    "to": "      .catch((err) => this.log.warn(`After change: ${err.message}`));"
+  },
+  {
+    "name": "r1 #23: a scene on a selector does not nudge",
+    "file": "src/app.js",
+    "from": "      sent = this.publish(button, position);\n    }\n    if (!card) {",
+    "to": "      sent = this.publish(button, position);\n    }\n    if (false) {"
+  },
+  {
+    "name": "r1 #23: several waiting nudges (timers left after stop())",
+    "file": "src/app.js",
+    "from": "    if (this.stopped || this.nudgeTimer) {",
+    "to": "    if (this.stopped) {"
+  },
+  {
+    "name": "r1 #23: a tap on the card skips the states budget",
+    "file": "src/app.js",
+    "from": "    if (!this.budget.take(states)) {",
+    "to": "    if (!card && !this.budget.take(states)) {"
   }
 ]

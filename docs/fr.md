@@ -140,8 +140,10 @@ Ne faites pas une scène qui renvoie une commande **au bouton qui l'a
 déclenchée**. L'intégration s'en protège :
 
 - un appui, un « marche » ou un changement de position répété plus de
-  **20 fois en une minute** sur le même bouton est refusé jusqu'à la fin de la
-  minute ;
+  **20 fois en une minute** sur le même bouton par Gladys (une scène, la boîte
+  « Appareils », la voix) est refusé jusqu'à la fin de la minute. Les appuis
+  sur la carte du widget ne comptent pas : Gladys les limite elle-même à 30
+  par minute ;
 - l'« arrêt » d'un interrupteur n'est **jamais** refusé ; un « arrêt » d'un
   interrupteur déjà à l'arrêt (et un « marche » d'un interrupteur déjà en
   marche, ou la position où un sélecteur est déjà) est accepté sans rien
@@ -347,7 +349,7 @@ l'arrêt après une durée.
   peut être ajoutée si Gladys l'a.
 - L'intégration ne lance pas les scènes elle-même : c'est le changement d'état
   du bouton qui les déclenche (étape 3).
-- Le widget se met à jour à chaque appui sur la carte, dans les 10 secondes
+- Le widget se met à jour à chaque appui sur la carte, au plus 11 secondes
   après un changement venu d'ailleurs (scène, boîte « Appareils », fin d'une
   temporisation), et sinon chaque minute.
 - Si la liste enregistrée est perdue (nouveau volume), les boutons sont

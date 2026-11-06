@@ -12,15 +12,21 @@ the notes of the version's GitHub Release.
 
 ### Fixed
 
-- Widget: fast taps no longer freeze the cards. Gladys allows an integration
-  30 widget actions and 30 card reads a minute, and reads every open card
-  again after each tap; the integration asked one more read on top of each
-  tap, and held a person to the 20 changes a minute meant for a scene that
-  loops. Now a tap asks no extra read, any other change asks one at most
-  every 10 seconds (the last one never lost), the cards are read once a
-  minute instead of every 15 to 30 seconds, and every fast tap is taken (the
-  last one wins). Beyond the limits of Gladys, it still says "The action
-  failed" for up to a minute. Reported on the forum (topic 11392).
+- Widget: the integration no longer adds its own card reads to the taps.
+  Gladys allows an integration 30 widget actions and 30 card reads a
+  minute, and reads every open card again after each tap; the integration
+  asked one more read on top of each tap, read the cards every 15 s while a
+  timer ran, and held a person to the 20 changes a minute meant for a scene
+  that loops (a push button or a selector tapped more than 20 times a
+  minute was refused). Now a tap asks no extra read, any other change asks
+  one at most every 10.5 seconds (the last one never lost), the cards are
+  read once a minute, and every tap within the limits of Gladys is taken
+  (the last one wins). At a steady pace (about 15 taps a minute, two cards,
+  a timer running) no tap is refused any more. **Gladys itself still
+  freezes the cards** for up to a minute ("The action failed") beyond about
+  30 taps a minute, fewer with several cards open: about 15 with two
+  cards, 10 with three. A fast burst on two cards still fails at the 15th
+  tap: that limit is in Gladys. Reported on the forum (topic 11392).
 - Widget: a selector now has a state light too, in the "State light when
   on" colour, naming its position ("Eco", "Position: 4" for a number); its colours showed
   nowhere. "Change a button" keeps that colour for a selector.

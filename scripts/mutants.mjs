@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // Mutation check of the guards (not part of the image, not run by the CI):
 // each mutant of scripts/mutants.json is applied to its own copy of the
-// repository (in a fresh temporary directory, node_modules linked, never
+// repository (in a fresh temporary directory, node_modules copied, never
 // installed), the test files are run, and the whole process group is killed at
 // the deadline. A guard whose mutant survives needs a test; a mutant must make
 // a test FAIL, never hang.
@@ -9,15 +9,7 @@
 // -----------------------------------------------------------------------------
 
 import { spawn } from 'node:child_process';
-import {
-  cpSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -65,11 +57,12 @@ try {
     if (only && !only.has(i)) continue;
     const dir = mkdtempSync(join(base, 'm-'));
     try {
+      // A real copy of everything, node_modules included: never a link to the
+      // shared repository (an `npm ci` in a copy would empty it).
       cpSync(REPO, dir, {
         recursive: true,
-        filter: (src) => !['.git', 'node_modules'].includes(basename(src)),
+        filter: (src) => basename(src) !== '.git',
       });
-      symlinkSync(join(REPO, 'node_modules'), join(dir, 'node_modules'));
       const file = join(dir, m.file);
       const text = readFileSync(file, 'utf8');
       const n = text.split(m.from).length - 1;

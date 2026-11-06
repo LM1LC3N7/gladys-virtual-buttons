@@ -444,6 +444,74 @@ test('a burst of taps on the card: every one answered, the last one wins, no nud
 // a change right after another (a scene, the device box) stayed hidden until
 // the cache expired. One nudge now, the next one waits its turn and carries
 // every change made meanwhile; none after stop().
+// r1 of the patch for t/11392 #23: every change made elsewhere than on the
+// card nudges (the 60 s cache would otherwise keep it), one waiting nudge at
+// most, and a tap on the card still takes its share of the states budget.
+test('nudges for timers, actions and scenes on a selector; one waiting; taps in the budget', async () => {
+  const t = await setup();
+  await t.add({ name: 'Tempo', kind: 'timed', minutes: 2 });
+  await t.add({ name: 'Mode', kind: 'selector', positions: 'Jour, Nuit' });
+  await t.add({ name: 'Lampe', kind: 'switch' });
+  const tempo = await t.create('Tempo');
+  const mode = await t.create('Mode');
+  const lamp = await t.create('Lampe');
+  await t.clock.advance(60 * 1000);
+  const sent = () => t.gladys.fake.widgetRefreshes.length;
+
+  // The end of a timer: the card shows "Off" at once, not a minute late.
+  await t.gladys.fake.setValue(tempo, tempo.features[0], 1);
+  await t.clock.advance(60 * 1000);
+  let start = sent();
+  await t.clock.advance(60 * 1000 + 100);
+  assert.equal(t.app.buttons.get(t.idOf(tempo)).state, 0);
+  assert.equal(sent(), start + 1, 'the end of the timer nudges');
+
+  // "Change a button" nudges.
+  await t.clock.advance(60 * 1000);
+  start = sent();
+  const edited = await t.gladys.fake.action(ACTIONS.EDIT, {
+    ...EDIT_FORM,
+    button: lamp.external_id,
+    icon: 'moon',
+  });
+  assert.equal(edited.success, true);
+  await t.clock.settle();
+  assert.equal(sent(), start + 1, 'a change of the list nudges');
+
+  // A scene that moves a selector nudges.
+  await t.clock.advance(60 * 1000);
+  start = sent();
+  assert.equal((await t.gladys.fake.setValue(mode, mode.features[0], '2')).success, true);
+  assert.equal(sent(), start + 1, 'a scene on a selector nudges');
+
+  // Three changes while a nudge waits: one timer, none left after stop().
+  await t.gladys.fake.setValue(lamp, lamp.features[0], 1);
+  await t.gladys.fake.setValue(lamp, lamp.features[0], 0);
+  await t.gladys.fake.setValue(mode, mode.features[0], '1');
+  assert.equal(sent(), start + 1);
+
+  // A tap on the card takes its share of the states budget (never beyond it).
+  t.app.budget.take(t.app.budget.free());
+  const content = (
+    await t.gladys.fake.widgetGet(WIDGETS.BUTTONS, { settings: { button_1: lamp.external_id } })
+  ).data.content;
+  const pill = content.components.find((c) => c.type === 'button');
+  const refused = await t.gladys.fake.widgetAction(
+    WIDGETS.BUTTONS,
+    pill.action.key,
+    pill.action.params,
+    { settings: { button_1: lamp.external_id } },
+  );
+  assert.equal(refused.success, false);
+  assert.match(refused.error, /Trop de commandes|Too many commands/);
+  assert.equal(t.app.buttons.get(t.idOf(lamp)).state, 0);
+
+  await t.app.stop();
+  assert.equal(t.clock.pending(), 0, 'no timer left after stop()');
+  await t.clock.advance(60 * 1000);
+  assert.equal(sent(), start + 1, 'no nudge after stop()');
+});
+
 test('refresh nudges: spaced 10.5 s, the last change never dropped, none after stop', async () => {
   const t = await setup();
   await t.add({ name: 'Lampe', kind: 'switch' });

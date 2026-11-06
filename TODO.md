@@ -72,8 +72,8 @@ up to date at the end of every milestone.
   one `status` list: a row per switch or timed switch, its icon in
   `VB_ON_COLOR` / `VB_OFF_COLOR` (the six `WIDGET_COLORS`, default
   `success` / `neutral`), "On"/"Off" in words, and the on pill takes the
-  tick. No row for a selector (removed in 0.1.3 after #18: it read as a stray
-  value). Colours written in the device params only when not the default,
+  tick. A selector's row came back in t/11392 #23 (its colours showed
+  nowhere): "on" colour, its position, "Position: 4" for a number (#18). Colours written in the device params only when not the default,
   and absent from `/data` when never chosen: old devices and entries are
   unchanged. SDK 0.16 in the same commit.
 
@@ -137,8 +137,10 @@ up to date at the end of every milestone.
   is still waiting its turn when 4 s have passed is cancelled; an "off" is
   always applied. A press waits for Gladys to take its 1 (M2): "pressed",
   "sent, without confirmation" (request out, no answer yet) or refused.
-- Guards: 20 presses or "on" a minute per button (loop of a scene on its own
-  button), refused with a message; 240 states a minute in all (host API: 300);
+- Guards: 20 presses, "on" or positions a minute per button for the commands
+  from Gladys (loop of a scene on its own button), refused with a message; a
+  tap on the card is exempt and not counted (t/11392 #23, Gladys caps widget
+  actions at 30 a minute); 240 states a minute in all (host API: 300);
   "off" is never refused (beyond 20 a minute, an "off" of a switch already off
   is acknowledged without publishing). A state Gladys refused is sent again by
   the sweep, except a push "1" (it would start a scene late); a state in
@@ -160,8 +162,9 @@ up to date at the end of every milestone.
   style: its colour when on (primary when "secondary" was chosen), secondary
   when off. Four `select` settings instead of one `multi_select` (the order is
   the user's, and each value stays under the 100-character bound).
-- Widget cache 30 s, 15 s while a timed switch runs; `requestWidgetRefresh`
-  after every change (rate-limited by the core).
+- Widget cache 60 s (t/11392 #23: every pull counts in the 30 a minute of
+  the integration); `requestWidgetRefresh` after every change that is not a
+  tap on the card, spaced 10.5 s, a trailing one never dropped.
 - No scene triggers nor scene actions in v1 (redundant with the state change
   trigger, loop risk; the core action "control a device" already sets a
   button).
@@ -187,7 +190,8 @@ up to date at the end of every milestone.
   checked again). Recovery: the param, else the options of the feature, the
   position from `last_value_string`. In the widget, a selector gets all its
   pills or none (never half); a pill tap carries its own position (never
-  "next"). 0.1.4 (Prof_Techno, t/11392 #18): no status row for selectors (a
+  "next"). 0.1.4 (Prof_Techno, t/11392 #18): no status row for selectors,
+  back in #23 with the position named (a
   number-named position showed as a bare "4" at the right; a long selector's
   pill is now "name: position"); no widget slot required (slot 1 empty gave
   the core's "settings.button_1: required").
