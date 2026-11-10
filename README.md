@@ -74,7 +74,11 @@ Gladys ⇄ SDK ⇄ src/handlers.js ⇄ src/app.js (ButtonsApp)
   one of the core `WIDGET_COLORS` (default `success` / `neutral`, written in
   the params only when not the default, so old devices are unchanged); a
   pill has only the three button styles (no green: the core keeps the green
-  "active" look for `device_feature` buttons); a selector takes one
+  "active" look for `device_feature` buttons), and follows the light where
+  one exists (t/11392 #25: on = `danger`/`primary` for a `danger`/`primary`/`info`
+  light, else the button style; off = `danger`/`primary`/`secondary` for
+  `danger`/`primary`/`info`/`neutral`, else `secondary`, and `secondary`
+  when it would equal the on style); a selector takes one
   pill per position (the current one in colour with a tick; its status row
   names the position in the "on" colour), never
   half of its pills; a selector of 5 or 6 positions takes one pill labelled

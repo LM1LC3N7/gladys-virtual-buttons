@@ -188,6 +188,85 @@ test('the style of a pill', () => {
   assert.equal(styleOf({ kind: 'timed', style: 'secondary', state: 1 }), 'primary');
 });
 
+test('t/11392 #25: the pill of a switch follows the colours of its light', () => {
+  const sw = (state, extra) => styleOf({ kind: 'switch', style: 'primary', state, ...extra });
+  // "On": blue or red when the light is; green, orange, grey: the button colour.
+  assert.equal(sw(1, { on_color: 'danger' }), 'danger');
+  assert.equal(sw(1, { on_color: 'info' }), 'primary');
+  assert.equal(sw(1, { on_color: 'primary', style: 'danger' }), 'primary');
+  assert.equal(sw(1, { on_color: 'success', style: 'danger' }), 'danger');
+  assert.equal(sw(1, { on_color: 'warning', style: 'secondary' }), 'primary');
+  assert.equal(sw(1, { on_color: 'neutral', style: 'danger' }), 'danger');
+  // "Off": blue, red or grey when the light is, never the look of "on".
+  assert.equal(sw(0, { on_color: 'danger', off_color: 'primary' }), 'primary');
+  assert.equal(sw(0, { off_color: 'danger' }), 'danger');
+  assert.equal(sw(0, { off_color: 'info', style: 'danger' }), 'primary');
+  assert.equal(sw(0, { off_color: 'neutral', style: 'danger' }), 'secondary');
+  assert.equal(sw(0, { off_color: 'success' }), 'secondary');
+  assert.equal(sw(0, { off_color: 'warning' }), 'secondary');
+  assert.equal(sw(0, { on_color: 'success', off_color: 'primary' }), 'secondary', 'the forum case');
+  assert.equal(sw(0, { on_color: 'danger', off_color: 'danger' }), 'secondary');
+  assert.equal(sw(0, { on_color: 'info', off_color: 'primary', style: 'danger' }), 'secondary');
+  // A timed switch alike; a push button keeps its own colour.
+  assert.equal(
+    styleOf({ kind: 'timed', style: 'primary', state: 1, on_color: 'danger' }),
+    'danger',
+  );
+  assert.equal(
+    styleOf({ kind: 'timed', style: 'primary', state: 0, off_color: 'danger' }),
+    'danger',
+  );
+  assert.equal(
+    styleOf({ kind: 'push', style: 'primary', state: 0, on_color: 'danger', off_color: 'danger' }),
+    'primary',
+  );
+});
+
+test('t/11392 #25: the current pill of a selector takes the "on" colour of its light', () => {
+  const base = {
+    id: 'b0123456789ab',
+    name: 'Mode',
+    icon: 'moon',
+    style: 'primary',
+    confirm: false,
+  };
+  const short = {
+    ...base,
+    kind: 'selector',
+    state: 2,
+    positions: ['A', 'B', 'C'],
+    on_color: 'danger',
+  };
+  const pills = buttonsWidget([short], 0).components.filter((c) => c.type === 'button');
+  assert.deepEqual(
+    pills.map((p) => p.style),
+    ['secondary', 'danger', 'secondary'],
+  );
+  const green = buttonsWidget([{ ...short, on_color: 'success' }], 0).components.filter(
+    (c) => c.type === 'button',
+  );
+  assert.equal(green[1].style, 'primary', 'no green pill: the button colour');
+  const long = {
+    ...short,
+    positions: ['A', 'B', 'C', 'D', 'E'],
+    on_color: 'info',
+    style: 'danger',
+  };
+  const [one] = buttonsWidget([long], 0).components.filter((c) => c.type === 'button');
+  assert.equal(one.style, 'primary');
+  const switches = buttonsWidget(
+    [
+      { ...base, kind: 'switch', state: 0, off_color: 'danger' },
+      { ...base, id: 'b0123456789ac', kind: 'timed', state: 1, on_color: 'danger', until: 60000 },
+    ],
+    0,
+  ).components.filter((c) => c.type === 'button');
+  assert.deepEqual(
+    switches.map((p) => p.style),
+    ['danger', 'danger'],
+  );
+});
+
 test('readPositions: 2 to 6 names, cleaned, bounded, unique', () => {
   assert.deepEqual(readPositions('Confort, Éco;Hors-gel , Arrêt').positions, [
     'Confort',

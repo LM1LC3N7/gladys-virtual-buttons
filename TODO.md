@@ -63,13 +63,32 @@ up to date at the end of every milestone.
 - [ ] **Milestone 3 — first release**: Docker image build check, Release
       workflow, topic, then the store validator once the image is published.
 
+## Forum feedback 5 (topic 11392 #25, Prof_Techno, 2026-11-06)
+
+- [x] The pills (not the icons) should change colour with the state. What the core allows
+      (`front/src/components/boxs/external-widget/WidgetComponents.jsx` `WidgetButtons`, `style.css`; spec
+      `capabilities/dashboard-widgets.md` §5 and §7): an action pill has three backgrounds, `primary` (blue fill,
+      white ink), `danger` (red tint), `secondary` (neutral); the green tint (`buttonActive`) is only for a
+      `device_feature` + `value` pill whose feature's `last_value` equals `value`. Done: the pill follows the light
+      where a background exists (on: `danger`/`primary`/`info` → `danger`/`primary`, else the button style; off:
+      `danger`/`primary`/`info`/`neutral` → `danger`/`primary`/`secondary`, else `secondary`; off equal to on →
+      `secondary`). Default colours (green / grey) unchanged, so the tester's "green / blue" looks as before.
+- [ ] Core ask (if Louis agrees): let an action button declare its state, e.g. `"active": true` (the core already
+      paints `buttonActive`, green tint, light and dark), or accept `style: "success"` (and `warning`) on an action
+      button. Either gives the green "on" pill without giving up the confirmation and the toggle. A
+      `device_feature` pill per position would turn a selector's current pill green today, but without confirmation
+      and with the core's green, not the chosen colour: not done.
+- [ ] Fast taps (#25): the tester finds them fine in normal use; maybe in visitor mode (several people). Nothing
+      to do in the module beyond 0.1.6; the core limit (30 actions/30 reads a minute) stays the core's.
+
 ## Decisions
 
 - State light (t/11392 #20, green on / red off asked): a widget pill
   (`button` + `action`) has only `primary` | `secondary` | `danger`; the
   core's green "active" look exists only for `device_feature` + `value`
   buttons, which cannot ask a confirmation nor toggle. So the colour goes in
-  one `status` list: a row per switch or timed switch, its icon in
+  one `status` list (and, since t/11392 #25, in the pill too where the core
+  has a matching style): a row per switch or timed switch, its icon in
   `VB_ON_COLOR` / `VB_OFF_COLOR` (the six `WIDGET_COLORS`, default
   `success` / `neutral`), "On"/"Off" in words, and the on pill takes the
   tick. A selector's row came back in t/11392 #23 (its colours showed
@@ -159,8 +178,9 @@ up to date at the end of every milestone.
   can ask for a confirmation. The params carry `{ id, value }`, the value
   decided on the state the card showed (I6), never a toggle. The
   core tints only `device_feature` pills, so a switch shows its state by its
-  style: its colour when on (primary when "secondary" was chosen), secondary
-  when off. Four `select` settings instead of one `multi_select` (the order is
+  style: when on, its light's "on" colour if blue or red, else its colour
+  (primary when "secondary" was chosen); when off, its light's "off" colour
+  if blue, red or grey and not the on look, else secondary (t/11392 #25). Four `select` settings instead of one `multi_select` (the order is
   the user's, and each value stays under the 100-character bound).
 - Widget cache 60 s (t/11392 #23: every pull counts in the 30 a minute of
   the integration); `requestWidgetRefresh` after every change that is not a

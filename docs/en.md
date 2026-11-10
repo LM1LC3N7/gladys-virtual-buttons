@@ -46,8 +46,12 @@ button is the remote, the scene does the work.
      when on, grey when off. A selector's light takes the "when on" colour
      (it is always on one of its positions). Light blue and orange are the
      palest on the light theme: prefer green, blue, red or grey. The light is
-     a row above the pills: the pill keeps the colour of the button (blue,
-     grey or red, Gladys allows no other). No effect on a push button, nor
+     a row above the pills. The pill follows these colours too when Gladys
+     has them for a pill: blue (or light blue, shown blue) and red when on,
+     blue, red and grey when off. Green and orange do not exist for a pill:
+     when on, it then takes the colour of the button; when off, grey. An off
+     pill never looks like the on pill (grey then). Example: red when on,
+     blue when off gives a red pill when on, a blue one when off. No effect on a push button, nor
      "when off" on a selector ("Change a button" ignores them there);
    - **Ask for confirmation before pressing (widget)**: yes or no.
 3. Confirm. Under the button, the message says: `Button "Heating" added. Now
@@ -159,17 +163,20 @@ it**. The integration protects itself:
      "On" or "Off". By default the light is green when on and grey when off.
      You can choose both colours for each switch (green and red, for
      example);
-   - the pill of a **switch** that is on is filled, in its colour (blue if
-     you chose grey), with a tick in place of its icon; off, it is grey with
-     its icon. A press does what the pill shows: turn off a pill that is on,
+   - the pill of a **switch** that is on is filled, with a tick in place of
+     its icon: red or blue if its light when on is, otherwise in the colour
+     of the button (blue if you chose grey). Off, it has its icon, in blue,
+     red or grey if its light when off is (and the on pill does not already
+     look like that), otherwise grey. A press does what the pill shows: turn off a pill that is on,
      turn on a pill that is off (if the state changed meanwhile, the message
      says "already off" or "already on");
    - for a **timed switch** that is on, its state light also gives the time
-     left ("On · 25 min"). Its pill takes the colour chosen for the
-     button: it is red only if you chose "Danger (red)". For another look,
-     change the colour of the button or of its light with "Change a button";
+     left ("On · 25 min"). Its pill follows the same rules as a switch's.
+     For another look, change the colour of the button or those of its light
+     with "Change a button";
    - a **selector** takes one pill per position. The current
-     position stands out: its colour and a tick, the others grey. Its light,
+     position stands out: a tick and the colour of "State light when on" if
+     it is blue or red (otherwise the button's), the others grey. Its light,
      above, names it ("Eco", or "Position: 4" for a number) in the colour chosen for "State light
      when on". A press puts
      the selector on the position of the pill (the message says "already on
@@ -295,9 +302,10 @@ duration.
   the widget shows one pill that opens the list (a card holds 4 pills at
   most).
 - No long press nor double press, no free colour nor button size. A pill has
-  only three colours: blue, grey and red. **No green pill**: Gladys keeps
-  green for buttons tied directly to a device, which cannot ask for a
-  confirmation. Green exists for the state light of a switch, which has six
+  only three colours: blue, grey and red. **No green nor orange pill**:
+  Gladys keeps green for buttons tied directly to a device, which can
+  neither ask for a confirmation nor toggle on/off with the same press. The
+  pill follows the colours of the light when they are among these three. Green exists for the state light of a switch, which has six
   colours: green, blue, light blue, orange, red and grey. These are the
   colours Gladys gives to widgets; no free colour code (#00ff00).
 - **The shape of the buttons is the Gladys one**: a pill with an icon and a

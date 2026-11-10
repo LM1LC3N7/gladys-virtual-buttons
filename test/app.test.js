@@ -1015,9 +1015,11 @@ test('the state light of a switch: colours, words, tick, defaults, edit', async 
     ['Nuit', 'Off', 'Arrêt', 'moon', 'neutral'],
     ['Tempo', 'Off', 'Arrêt', 'timer', 'danger'],
   ]);
+  // Off: the pill takes the "off" colour of the light when Gladys has it
+  // (red for Tempo, t/11392 #25), grey otherwise.
   assert.deepEqual(shown.pills, [
     ['Nuit', 'moon', 'secondary'],
-    ['Tempo', 'timer', 'secondary'],
+    ['Tempo', 'timer', 'danger'],
     ['Portail', 'door-open', 'primary'],
   ]);
 
@@ -1028,7 +1030,8 @@ test('the state light of a switch: colours, words, tick, defaults, edit', async 
     ['Nuit', 'On', 'Marche', 'moon', 'success'],
     ['Tempo', 'On · 10 min', 'Marche · 10 min', 'timer', 'warning'],
   ]);
-  // On: filled (primary when grey was chosen) and the tick, not colour alone.
+  // On: filled (primary when grey was chosen; no orange pill in Gladys) and
+  // the tick, not colour alone.
   assert.deepEqual(shown.pills, [
     ['Nuit', 'check-circle', 'primary'],
     ['Tempo', 'check-circle', 'primary'],

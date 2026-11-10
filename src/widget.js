@@ -12,8 +12,10 @@
 // action can ask a confirmation. The core tints a pill green ("active") only
 // for device_feature + value, and an action pill has three styles (primary,
 // secondary, danger), no green. So a switch shows its state through its
-// style and a tick: the chosen style and the tick when on (primary when
-// "secondary" was chosen), secondary with its own icon when off.
+// style and a tick: when on, the "on" colour of its light if it is blue or
+// red, else the chosen style (primary when "secondary" was chosen), and the
+// tick; when off, the "off" colour if it is blue, red or grey and not the
+// "on" look, else secondary, with its own icon (styleOf).
 //
 // Above the pills, a status list gives each switch, timed switch and
 // selector shown its state light: its icon in the colour chosen for "on" or
@@ -42,15 +44,47 @@ const cut = (text, max) => {
   return chars.length > max ? `${chars.slice(0, max - 1).join('')}…` : chars.join('');
 };
 
-/** The style a pill shows. */
+/**
+ * The pill background each light colour has in Gladys (t/11392 #25: the
+ * pill, not only the light, should follow the state). An action pill has
+ * three backgrounds (core `WidgetComponents.jsx`, `style.css`): blue fill
+ * (`primary`), red tint (`danger`), neutral (`secondary`). Light blue maps
+ * to the blue fill; green and orange have none (the core's green tint is
+ * only for a `device_feature` pill, which cannot confirm nor toggle).
+ */
+const PILL_OF_COLOR = new Map([
+  ['primary', 'primary'],
+  ['info', 'primary'],
+  ['danger', 'danger'],
+  ['neutral', 'secondary'],
+]);
+
+/**
+ * The style of a pill that is "on" (a switch on, the current position of a
+ * selector): the "on" colour of the light when Gladys has it as a filled
+ * pill (blue, red), otherwise the colour of the button (blue when grey was
+ * chosen), so an "on" pill always stands out.
+ */
+export function onStyleOf(button) {
+  const pill = PILL_OF_COLOR.get(colorsOf(button).on);
+  return pill === 'primary' || pill === 'danger' ? pill : lit(button);
+}
+
+/**
+ * The style a pill shows. A switch that is off takes the "off" colour of its
+ * light when Gladys has it (blue, red, grey) and it differs from the "on"
+ * pill; otherwise grey: on and off never look the same.
+ */
 export function styleOf(button) {
   if (button.kind === KINDS.PUSH) {
     return button.style;
   }
-  if (button.state !== 1) {
-    return 'secondary';
+  const on = onStyleOf(button);
+  if (button.state === 1) {
+    return on;
   }
-  return lit(button);
+  const off = PILL_OF_COLOR.get(colorsOf(button).off) ?? 'secondary';
+  return off === on ? 'secondary' : off;
 }
 
 const cut2 = (text, max) => ({ en: cut(text.en, max), fr: cut(text.fr, max) });
@@ -161,7 +195,7 @@ export function buttonsWidget(buttons, now) {
         button,
         label: listLabel(button),
         icon: button.icon,
-        style: lit(button),
+        style: onStyleOf(button),
         list: true,
       });
       continue;
@@ -178,7 +212,7 @@ export function buttonsWidget(buttons, now) {
           button,
           label: position,
           icon: current ? CURRENT_ICON : button.icon,
-          style: current ? lit(button) : 'secondary',
+          style: current ? onStyleOf(button) : 'secondary',
           value: index + 1,
         });
       }

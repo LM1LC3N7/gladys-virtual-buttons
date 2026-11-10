@@ -10,6 +10,19 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Changed
+
+- Widget: the pill of a switch, a timed switch or a selector now follows
+  the colours of its state light where Gladys has them for a pill, not only
+  the light row: blue (light blue shown blue) or red when on, blue, red or
+  grey when off; for a selector, its current position in the "on" colour.
+  Gladys has no green nor orange pill for an integration (its green is only
+  for buttons tied directly to a device, which cannot ask for a
+  confirmation nor toggle): with those colours the pill keeps the colour of
+  the button when on and grey when off, as before. An off pill never looks
+  like the on pill. Buttons with the default colours (green / grey) look
+  the same as before.
+
 ## [0.1.6] - 2026-11-06
 
 ### Fixed

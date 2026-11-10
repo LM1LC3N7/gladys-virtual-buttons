@@ -53,6 +53,16 @@ function run(dir) {
 let survivors = 0;
 const base = mkdtempSync(join(tmpdir(), 'virtual-buttons-mutants-'));
 try {
+  // The unmutated copy first: a suite already red would mark every mutant
+  // "killed".
+  const clean = mkdtempSync(join(base, 'clean-'));
+  cpSync(REPO, clean, { recursive: true, filter: (src) => basename(src) !== '.git' });
+  const baseline = await run(clean);
+  rmSync(clean, { recursive: true, force: true });
+  if (baseline.code !== 0) {
+    console.log(`baseline ${baseline.code === 'HUNG' ? 'HUNG' : 'FAILED'}: fix the suite first`);
+    throw new Error('baseline');
+  }
   for (const [i, m] of list.entries()) {
     if (only && !only.has(i)) continue;
     const dir = mkdtempSync(join(base, 'm-'));

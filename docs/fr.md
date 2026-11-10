@@ -48,9 +48,14 @@ change. Le bouton est la télécommande, la scène fait le travail.
      l'arrêt. Un sélecteur prend la couleur « en marche » pour son voyant
      (il est toujours sur une de ses positions). Bleu clair et orange sont
      les plus pâles sur le thème clair : préférez vert, bleu, rouge ou gris.
-     Le voyant est une ligne au-dessus des pastilles : la pastille garde la
-     couleur du bouton (bleu, gris ou rouge, Gladys n'en permet pas d'autre).
-     Sans effet pour un bouton poussoir, ni « Voyant à l'arrêt » pour un
+     Le voyant est une ligne au-dessus des pastilles. La pastille suit aussi
+     ces couleurs quand Gladys les a pour une pastille : bleu (ou bleu clair,
+     montré en bleu) et rouge en marche, bleu, rouge et gris à l'arrêt. Vert
+     et orange n'existent pas pour une pastille : en marche, elle prend alors
+     la couleur du bouton ; à l'arrêt, le gris. Une pastille éteinte n'a
+     jamais l'aspect de la pastille allumée (sinon, gris). Exemple : en
+     marche rouge, à l'arrêt bleu donne une pastille rouge allumée, bleue
+     éteinte. Sans effet pour un bouton poussoir, ni « Voyant à l'arrêt » pour un
      sélecteur (« Modifier un bouton » les ignore alors) ;
    - **Demander une confirmation avant l'appui (widget)** : oui ou non.
 3. Validez. Sous le bouton, le message dit : « Bouton « Chauffage » ajouté.
@@ -168,20 +173,24 @@ déclenchée**. L'intégration s'en protège :
      son état en toutes lettres, « Marche » ou « Arrêt ». Par défaut, le
      voyant est vert en marche et gris à l'arrêt. Vous pouvez choisir ces
      deux couleurs pour chaque interrupteur (par exemple vert et rouge) ;
-   - la pastille d'un **interrupteur** allumé est pleine, dans sa couleur
-     (bleu si vous aviez choisi gris), avec une coche à la place de son
-     icône ; éteint, elle est grise avec son icône. Un appui fait ce que la
+   - la pastille d'un **interrupteur** allumé est pleine, avec une coche à
+     la place de son icône : rouge ou bleue si son voyant en marche l'est,
+     sinon dans la couleur du bouton (bleu si vous aviez choisi gris).
+     Éteint, elle a son icône, en bleu, rouge ou gris si son voyant à
+     l'arrêt l'est (et que la pastille allumée n'a pas déjà ce rendu),
+     sinon en gris. Un appui fait ce que la
      pastille montre :
      éteindre une pastille allumée, allumer une pastille éteinte (si l'état a
      changé entre-temps, le message dit « déjà à l'arrêt » ou « déjà en
      marche ») ;
    - pour un **interrupteur temporisé** allumé, son voyant donne aussi le
-     temps restant (« Marche · 25 min »). Sa pastille prend la couleur
-     choisie pour le bouton : elle est rouge seulement si vous avez choisi
-     « Danger (rouge) ». Pour un autre rendu, changez la couleur du bouton ou
-     celle de son voyant avec « Modifier un bouton » ;
+     temps restant (« Marche · 25 min »). Sa pastille suit les mêmes
+     règles que celle d'un interrupteur. Pour un autre rendu, changez la
+     couleur du bouton ou celles de son voyant avec « Modifier un bouton » ;
    - un **sélecteur** prend une pastille par position. La position
-     actuelle est mise en avant : sa couleur et une coche, les autres en gris.
+     actuelle est mise en avant : une coche et la couleur de « Voyant en
+     marche » si elle est bleue ou rouge (sinon celle du bouton), les autres
+     en gris.
      Son voyant, au-dessus, la nomme (« Éco », ou « Position : 4 » pour un nombre) dans la couleur
      choisie pour « Voyant en marche ».
      Un appui met le sélecteur sur la position de la pastille (le message dit
@@ -318,8 +327,10 @@ l'arrêt après une durée.
   carte compte 4 pastilles au plus).
 - Pas d'appui long ni de double appui, pas de couleur libre ni de taille de
   bouton. La pastille n'a que trois couleurs : bleu, gris et rouge. **Pas de
-  pastille verte** : Gladys réserve le vert aux boutons liés directement à
-  un appareil, qui ne peuvent pas demander de confirmation. Le vert existe
+  pastille verte ni orange** : Gladys réserve le vert aux boutons liés
+  directement à un appareil, qui ne peuvent ni demander de confirmation ni
+  basculer marche/arrêt d'un même appui. La pastille suit les couleurs du
+  voyant quand elles sont parmi ces trois. Le vert existe
   pour le voyant d'un interrupteur, qui a six couleurs : vert, bleu, bleu
   clair, orange, rouge et gris. Ce sont les couleurs que Gladys donne aux
   widgets ; pas de code couleur libre (#00ff00).

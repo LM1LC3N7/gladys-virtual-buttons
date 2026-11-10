@@ -160,5 +160,65 @@
     "file": "src/app.js",
     "from": "    if (!this.budget.take(states)) {",
     "to": "    if (!card && !this.budget.take(states)) {"
+  },
+  {
+    "name": "t/11392 #25: the on pill ignores the light colour",
+    "file": "src/widget.js",
+    "from": "  return pill === 'primary' || pill === 'danger' ? pill : lit(button);",
+    "to": "  return lit(button);"
+  },
+  {
+    "name": "t/11392 #25: a grey on light gives a grey on pill",
+    "file": "src/widget.js",
+    "from": "  return pill === 'primary' || pill === 'danger' ? pill : lit(button);",
+    "to": "  return pill ?? lit(button);"
+  },
+  {
+    "name": "t/11392 #25: light blue has no pill",
+    "file": "src/widget.js",
+    "from": "  ['info', 'primary'],\n",
+    "to": ""
+  },
+  {
+    "name": "t/11392 #25: red has no pill",
+    "file": "src/widget.js",
+    "from": "  ['danger', 'danger'],\n",
+    "to": ""
+  },
+  {
+    "name": "t/11392 #25: the off pill ignores the light colour",
+    "file": "src/widget.js",
+    "from": "  const off = PILL_OF_COLOR.get(colorsOf(button).off) ?? 'secondary';",
+    "to": "  const off = 'secondary';"
+  },
+  {
+    "name": "t/11392 #25: the off pill may look like the on pill",
+    "file": "src/widget.js",
+    "from": "  return off === on ? 'secondary' : off;",
+    "to": "  return off;"
+  },
+  {
+    "name": "t/11392 #25: the off pill reads the on colour",
+    "file": "src/widget.js",
+    "from": "PILL_OF_COLOR.get(colorsOf(button).off)",
+    "to": "PILL_OF_COLOR.get(colorsOf(button).on)"
+  },
+  {
+    "name": "t/11392 #25: a push button follows the light colours",
+    "file": "src/widget.js",
+    "from": "  if (button.kind === KINDS.PUSH) {\n    return button.style;",
+    "to": "  if (false) {\n    return button.style;"
+  },
+  {
+    "name": "t/11392 #25: the current position ignores the on colour",
+    "file": "src/widget.js",
+    "from": "style: current ? onStyleOf(button) : 'secondary',",
+    "to": "style: current ? lit(button) : 'secondary',"
+  },
+  {
+    "name": "t/11392 #25: a long selector pill ignores the on colour",
+    "file": "src/widget.js",
+    "from": "        style: onStyleOf(button),\n        list: true,",
+    "to": "        style: lit(button),\n        list: true,"
   }
 ]
