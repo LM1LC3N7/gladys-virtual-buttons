@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-11-10
+
 ### Changed
 
 - Widget: the pill of a switch, a timed switch or a selector now follows
@@ -166,7 +168,8 @@ the notes of the version's GitHub Release.
 - Step-by-step guides in English and French, with the exact words of the
   Gladys screens.
 
-[Unreleased]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.3...v0.1.4
