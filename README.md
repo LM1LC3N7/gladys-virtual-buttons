@@ -61,7 +61,7 @@ Gladys ⇄ SDK ⇄ src/handlers.js ⇄ src/app.js (ButtonsApp)
   refused sent again by the sweep (never a late push "1").
 - **Actions**: "Change a button" starts on "keep" (duration 0) and lists what
   changed; the same changes for another button right after must be asked
-  twice. "Remove a button" needs the name typed, turns a switch that is on off
+  twice. "Remove a button": picking the button in the list is enough (the name is optional, and must agree if typed); it turns a switch that is on off
   first and waits for Gladys to take the 0.
 - **Widget** "Buttons" (Gladys 5.1.0+): four optional settings `button_1` …
   `button_4` (none required, filled slots shown in order, a message when none), one pill each (widget action `press_<n>`, params

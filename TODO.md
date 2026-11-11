@@ -129,10 +129,12 @@ up to date at the end of every milestone.
   the result lists what changed, and the very same changes for another button
   within 2 minutes are refused once (run again to apply them). The `button`
   list (source devices) cannot have a default: reload the page to empty it.
-- "Remove a button" (review 1, I5 and M8): the name must be typed (the
-  confirmation); a switch that is on is turned off first and Gladys must take
+- "Remove a button" (review 1, I5 and M8; t/11392 #27): picking the button in the
+  list is enough, the name is optional (if both are filled they must agree); a switch that is on is turned off first and Gladys must take
   the 0 within 5 s, otherwise nothing is removed (the 0 is sent again by the
   sweep).
+- Known, not worked around: with a button that no longer exists in the list, the core itself answers
+  "config.button: must be one of …" before the integration runs.
 - Timed switch: "on" again restarts the duration; a new duration applies at
   the next "on"; the end is saved before the ack (an "on" that cannot be
   saved is refused), bounded to 24 h when read back; a timer per switch plus

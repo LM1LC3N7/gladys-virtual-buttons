@@ -740,6 +740,42 @@ test('remove a button: picking it in the list is enough, an empty name field inc
   assert.equal(t.app.buttons.size, 0);
 });
 
+test('remove a button: a list/name mismatch on a switch that is on publishes nothing, no 0 sent', async (ctx) => {
+  const t = await setup();
+  await t.add({ name: 'Alarme', kind: 'switch' });
+  await t.add({ name: 'Garde', kind: 'push' });
+  const device = await t.create('Alarme');
+  const feature = device.features[0];
+  await t.gladys.fake.setValue(device, feature, 1);
+  const publish = ctx.mock.method(t.gladys, 'publishStates');
+  const refused = await t.gladys.fake.action(ACTIONS.REMOVE, {
+    button: device.external_id,
+    current_name: 'Garde',
+  });
+  assert.equal(refused.success, false);
+  assert.match(refused.error, /rien n'est supprimé/);
+  await t.clock.settle();
+  assert.equal(publish.mock.callCount(), 0, 'nothing published');
+  assert.equal(t.gladys.fake.lastState(feature.external_id), 1, 'no 0 sent');
+  assert.equal(t.app.buttons.get(t.idOf(device)).state, 1, 'still on');
+  assert.equal(t.app.buttons.size, 2);
+});
+
+test('remove a button: a name that is only the start of another name is refused', async () => {
+  const t = await setup();
+  await t.add({ name: 'Alarm clock', kind: 'push' });
+  const refused = await t.gladys.fake.action(ACTIONS.REMOVE, { current_name: 'Alarm' });
+  assert.equal(refused.success, false);
+  assert.match(refused.error, /Aucun bouton/);
+  assert.equal(t.app.buttons.size, 1);
+  const edit = await t.gladys.fake.action(ACTIONS.EDIT, {
+    ...EDIT_FORM,
+    current_name: 'Alarm',
+    icon: 'sun',
+  });
+  assert.match(edit.error, /Aucun bouton/);
+});
+
 test('S4: removing a switch that is on publishes 0 first; refused if Gladys does not take it', async (ctx) => {
   const t = await setup();
   await t.add({ name: 'Chauffage', kind: 'timed', minutes: 30 });

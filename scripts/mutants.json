@@ -238,5 +238,17 @@
     "file": "src/app.js",
     "from": "if (hasChosen && hasTyped && nameKey(typed) !== nameKey(button.name)) {",
     "to": "if (nameKey(typed ?? '') !== nameKey(button.name)) {"
+  },
+  {
+    "name": "r1: the list/name check no longer comes before the 0 of a switch",
+    "file": "src/app.js",
+    "from": "if (hasChosen && hasTyped && nameKey(typed) !== nameKey(button.name)) {",
+    "to": "if (hasChosen && hasTyped && nameKey(typed) !== nameKey(button.name) && !isSwitchKind(button.kind)) {"
+  },
+  {
+    "name": "r1: a name matches a button by its start only",
+    "file": "src/app.js",
+    "from": "find((b) => nameKey(b.name) === key);\n      if (!button) {\n        throw new ButtonError('targetUnknown');",
+    "to": "find((b) => nameKey(b.name).startsWith(key));\n      if (!button) {\n        throw new ButtonError('targetUnknown');"
   }
 ]
