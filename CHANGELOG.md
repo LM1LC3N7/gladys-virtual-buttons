@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-11-11
+
 ### Fixed
 
 - "Remove a button": picking the button in the list is now enough (t/11392
@@ -178,7 +180,8 @@ the notes of the version's GitHub Release.
 - Step-by-step guides in English and French, with the exact words of the
   Gladys screens.
 
-[Unreleased]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.7...HEAD
+[Unreleased]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.8...HEAD
+[0.1.8]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/LM1LC3N7/gladys-virtual-buttons/compare/v0.1.4...v0.1.5
