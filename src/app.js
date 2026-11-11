@@ -966,12 +966,17 @@ export class ButtonsApp {
     await this.ready();
     const input = fields && typeof fields === 'object' ? fields : {};
     const typed = Object.hasOwn(input, 'current_name') ? input.current_name : undefined;
-    // The typed name is the confirmation: a removal is final.
-    if (typeof typed !== 'string' || nameKey(typed) === '') {
-      throw new ButtonError('removeNameMissing');
+    const chosen = Object.hasOwn(input, 'button') ? input.button : undefined;
+    const hasChosen = typeof chosen === 'string' && chosen !== '';
+    const hasTyped = typeof typed === 'string' && nameKey(typed) !== '';
+    // Picking the button in the list is a deliberate choice and confirms the
+    // removal; a typed name confirms it too. With neither, nothing is removed.
+    if (!hasChosen && !hasTyped) {
+      throw new ButtonError('removeTargetMissing');
     }
     const button = this.target(input);
-    if (nameKey(typed) !== nameKey(button.name)) {
+    // Both filled: they must name the same button.
+    if (hasChosen && hasTyped && nameKey(typed) !== nameKey(button.name)) {
       throw new ButtonError('removeNameMismatch');
     }
     // A switch that is on is turned off first, and Gladys must take the 0:

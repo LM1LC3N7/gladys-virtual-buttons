@@ -244,7 +244,9 @@ To see the drawings:
   another button. If you apply exactly the same changes to another button
   right after, the integration asks you to run the action again to confirm.
 - **Remove a button**: it is **final** (the scenes that used it will not find
-  it again). Type its name to confirm (and pick it in the list if you wish). A
+  it again). Pick the button in the list (that choice is the confirmation), or
+  type its name if it is not added to Gladys yet. If you fill both, they must
+  name the same button, otherwise nothing is removed. A
   switch that is on is turned off first: its "Off" scenes run. Then delete its
   device in the **Devices** tab if you had added it to Gladys, and **edit the
   dashboard cards** that showed it (Gladys shows a settings error there

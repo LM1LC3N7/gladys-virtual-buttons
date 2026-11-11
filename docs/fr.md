@@ -263,8 +263,10 @@ dessins :
   changements à un autre bouton juste après, l'intégration demande de
   recommencer l'action pour confirmer.
 - **Supprimer un bouton** : c'est **définitif** (les scènes qui l'utilisaient
-  ne le retrouveront pas). Tapez son nom pour confirmer (et choisissez-le dans
-  la liste si vous voulez). Un interrupteur en marche est d'abord mis à
+  ne le retrouveront pas). Choisissez le bouton dans la liste (ce choix vaut
+  confirmation), ou tapez son nom s'il n'est pas encore ajouté à Gladys. Si
+  vous remplissez les deux, ils doivent désigner le même bouton, sinon rien
+  n'est supprimé. Un interrupteur en marche est d'abord mis à
   l'arrêt : ses scènes « Off » partent. Ensuite, supprimez son appareil dans
   l'onglet **Appareils** si vous l'aviez ajouté à Gladys, et **modifiez les
   cartes du tableau de bord** qui l'affichaient (sinon Gladys y affiche une

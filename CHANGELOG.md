@@ -10,6 +10,16 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Fixed
+
+- "Remove a button": picking the button in the list is now enough (t/11392
+  #27); the name field is optional instead of failing with the raw
+  "fields.current_name: required". If both are filled they must name the same
+  button, otherwise nothing is removed; if neither is, a plain sentence (fr/en)
+  says so. The labels and the description of the action follow. A switch that
+  is on is still turned off first. "Change a button" had no required field and
+  already answers in plain words.
+
 ## [0.1.7] - 2026-11-10
 
 ### Changed

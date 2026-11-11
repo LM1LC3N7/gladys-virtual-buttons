@@ -1331,27 +1331,27 @@
         "fr": "Supprimer un bouton"
       },
       "description": {
-        "en": "Final. Type its name to confirm. A switch that is on is turned off first. Then delete its device in the Devices tab if you had added it to Gladys.",
-        "fr": "Définitif. Tapez son nom pour confirmer. Un interrupteur en marche est d'abord mis à l'arrêt. Supprimez ensuite son appareil dans l'onglet Appareils si vous l'aviez ajouté à Gladys."
+        "en": "Final. Pick the button in the list, or type its name. A switch that is on is turned off first. Then delete its device in the Devices tab if you had added it to Gladys.",
+        "fr": "Définitif. Choisissez le bouton dans la liste, ou tapez son nom. Un interrupteur en marche est d'abord mis à l'arrêt. Supprimez ensuite son appareil dans l'onglet Appareils si vous l'aviez ajouté à Gladys."
       },
       "timeout_seconds": 15,
       "fields": [
-        {
-          "key": "current_name",
-          "type": "string",
-          "label": {
-            "en": "Name of the button (to confirm)",
-            "fr": "Nom du bouton (pour confirmer)"
-          },
-          "required": true
-        },
         {
           "key": "button",
           "type": "select",
           "source": "devices",
           "label": {
-            "en": "Button in the list (optional, must have the name typed)",
-            "fr": "Bouton dans la liste (facultatif, doit porter le nom tapé)"
+            "en": "Button (added to Gladys)",
+            "fr": "Bouton (ajouté à Gladys)"
+          },
+          "required": false
+        },
+        {
+          "key": "current_name",
+          "type": "string",
+          "label": {
+            "en": "Or its name (not added to Gladys yet)",
+            "fr": "Ou son nom (pas encore ajouté à Gladys)"
           },
           "required": false
         }

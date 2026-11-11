@@ -183,8 +183,16 @@ test('the actions are the ones the code handles, with the code lists', () => {
     assert.equal(fields.button.default, undefined);
     assert.equal(fields.current_name.type, 'string');
   }
-  // "Remove": the name typed is the confirmation.
-  assert.equal(fieldsOf(ACTIONS.REMOVE).current_name.required, true);
+  // No field of a configuration action is required: the app answers a plain
+  // sentence (the form would show "fields.current_name: required" instead).
+  for (const key of [ACTIONS.EDIT, ACTIONS.REMOVE]) {
+    for (const [name, field] of Object.entries(fieldsOf(key))) {
+      assert.notEqual(field.required, true, `${key}.${name}`);
+    }
+  }
+  // "Remove": nothing says the name typed is required or must be given.
+  const removeAction = manifest.actions.find((a) => a.key === ACTIONS.REMOVE);
+  assert.doesNotMatch(JSON.stringify(removeAction), /doit porter|must have the name|to confirm/);
   // Icon and colour labels shown in the result of "Change" are the form's.
   for (const option of add.icon.options) {
     assert.deepEqual(ICON_LABELS[option.value], option.label, option.value);

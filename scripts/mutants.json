@@ -220,5 +220,23 @@
     "file": "src/widget.js",
     "from": "        style: onStyleOf(button),\n        list: true,",
     "to": "        style: lit(button),\n        list: true,"
+  },
+  {
+    "name": "t/11392 #27: removing with neither the list nor the name filled is refused",
+    "file": "src/app.js",
+    "from": "if (!hasChosen && !hasTyped) {",
+    "to": "if (false) {"
+  },
+  {
+    "name": "t/11392 #27: a name that is not the one of the button picked is refused",
+    "file": "src/app.js",
+    "from": "if (hasChosen && hasTyped && nameKey(typed) !== nameKey(button.name)) {",
+    "to": "if (false) {"
+  },
+  {
+    "name": "t/11392 #27: picking the button alone does not need the name",
+    "file": "src/app.js",
+    "from": "if (hasChosen && hasTyped && nameKey(typed) !== nameKey(button.name)) {",
+    "to": "if (nameKey(typed ?? '') !== nameKey(button.name)) {"
   }
 ]

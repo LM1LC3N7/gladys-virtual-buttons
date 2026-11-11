@@ -51,6 +51,7 @@ function run(dir) {
 }
 
 let survivors = 0;
+let baselineRed = false;
 const base = mkdtempSync(join(tmpdir(), 'virtual-buttons-mutants-'));
 try {
   // The unmutated copy first: a suite already red would mark every mutant
@@ -61,9 +62,10 @@ try {
   rmSync(clean, { recursive: true, force: true });
   if (baseline.code !== 0) {
     console.log(`baseline ${baseline.code === 'HUNG' ? 'HUNG' : 'FAILED'}: fix the suite first`);
-    throw new Error('baseline');
+    baselineRed = true;
   }
   for (const [i, m] of list.entries()) {
+    if (baselineRed) break;
     if (only && !only.has(i)) continue;
     const dir = mkdtempSync(join(base, 'm-'));
     try {
@@ -93,4 +95,4 @@ try {
 } finally {
   rmSync(base, { recursive: true, force: true });
 }
-process.exitCode = survivors ? 1 : 0;
+process.exitCode = survivors || baselineRed ? 1 : 0;

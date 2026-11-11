@@ -51,13 +51,13 @@ export const ERRORS = Object.freeze({
     "Choisissez le bouton dans la liste, ou tapez son nom s'il n'est pas encore ajouté à Gladys.",
   ),
   targetUnknown: both('No button has this name.', 'Aucun bouton ne porte ce nom.'),
-  removeNameMissing: both(
-    'Type the name of the button to confirm: the removal is final.',
-    'Tapez le nom du bouton pour confirmer : la suppression est définitive.',
+  removeTargetMissing: both(
+    'Nothing removed: choose the button in the list, or type its name.',
+    "Rien n'est supprimé : choisissez le bouton dans la liste, ou tapez son nom.",
   ),
   removeNameMismatch: both(
-    'The name typed is not the name of the button chosen in the list: nothing removed.',
-    "Le nom tapé n'est pas celui du bouton choisi dans la liste : rien n'est supprimé.",
+    'The name typed is not the name of the button chosen in the list: nothing removed. Fill only one of the two, or make them agree.',
+    "Le nom tapé n'est pas celui du bouton choisi dans la liste : rien n'est supprimé. Ne remplissez qu'un des deux, ou mettez-les d'accord.",
   ),
   nothingToChange: both(
     'Nothing to change: every field says "Unchanged".',

@@ -678,19 +678,26 @@ test('S10: the values a form kept are never carried silently to another button',
   assert.equal(b().icon, 'flame');
 });
 
-test('remove a button: name typed to confirm, gone from Discovery, never brought back', async () => {
+test('remove a button: picked in the list or typed, both must agree, gone from Discovery, never brought back', async () => {
   const t = await setup();
   await t.add({ name: 'Alarme', kind: 'push' });
   await t.add({ name: 'Garde', kind: 'switch' });
   const device = await t.create('Alarme');
-  const noName = await t.gladys.fake.action(ACTIONS.REMOVE, { button: device.external_id });
-  assert.match(noName.error, /définitive/);
+  const nothing = await t.gladys.fake.action(ACTIONS.REMOVE, {});
+  assert.equal(nothing.success, false);
+  assert.match(nothing.error, /choisissez le bouton dans la liste, ou tapez son nom/);
+  assert.doesNotMatch(nothing.error, /fields\./);
+  const blank = await t.gladys.fake.action(ACTIONS.REMOVE, { button: '', current_name: '  ' });
+  assert.match(blank.error, /Rien n'est supprimé/);
+  assert.equal(t.app.buttons.size, 2);
   const wrong = await t.gladys.fake.action(ACTIONS.REMOVE, {
     button: device.external_id,
     current_name: 'Garde',
   });
   assert.match(wrong.error, /rien n'est supprimé/);
   assert.equal(t.app.buttons.size, 2);
+  const unknownName = await t.gladys.fake.action(ACTIONS.REMOVE, { current_name: 'Nope' });
+  assert.match(unknownName.error, /Aucun bouton/);
   const removed = await t.gladys.fake.action(ACTIONS.REMOVE, {
     button: device.external_id,
     current_name: 'alarme',
@@ -709,6 +716,28 @@ test('remove a button: name typed to confirm, gone from Discovery, never brought
   await t.clock.settle();
   assert.equal(t.app.buttons.size, 1);
   assert.deepEqual(t.store.data.removed.length, 1);
+});
+
+test('remove a button: picking it in the list is enough, an empty name field included (t/11392 #27)', async () => {
+  const t = await setup();
+  await t.add({ name: 'Alarme', kind: 'switch' });
+  await t.add({ name: 'Garde', kind: 'push' });
+  const device = await t.create('Alarme');
+  await t.gladys.fake.setValue(device, device.features[0], 1);
+  const removed = await t.gladys.fake.action(ACTIONS.REMOVE, {
+    button: device.external_id,
+    current_name: '',
+  });
+  assert.equal(removed.success, true);
+  assert.equal(t.gladys.fake.lastState(device.features[0].external_id), 0, 'turned off first');
+  assert.deepEqual(
+    [...t.app.buttons.values()].map((b) => b.name),
+    ['Garde'],
+  );
+  // Only the picked button went; a typed name alone still works.
+  const typed = await t.gladys.fake.action(ACTIONS.REMOVE, { button: '', current_name: 'garde' });
+  assert.equal(typed.success, true);
+  assert.equal(t.app.buttons.size, 0);
 });
 
 test('S4: removing a switch that is on publishes 0 first; refused if Gladys does not take it', async (ctx) => {
